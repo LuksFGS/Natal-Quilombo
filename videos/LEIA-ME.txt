@@ -1,0 +1,6 @@
+Coloque seus vídeos aqui (formato .mp4).
+
+Dicas:
+- Prefira vídeos curtos (até 1 minuto) e com até ~20 MB cada.
+- Para comprimir vídeos grátis: https://www.freeconvert.com/pt/video-compressor
+- Vídeos longos ou muitos vídeos: suba no YouTube e use a opção data-youtube (veja index.html, seção FOTOS).

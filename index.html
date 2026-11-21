@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<!--
+  =====================================================================
+  SITE DA AÇÃO SOCIAL — index.html
+  ---------------------------------------------------------------------
+  COMO ESTE PROJETO ESTÁ ORGANIZADO:
+
+    editor.html       → PAINEL VISUAL (abra no navegador para editar tudo
+                        sem mexer em código!)
+    index.html        → estrutura da página
+    css/style.css     → aparência: CORES, fontes, tamanhos
+    js/config.js      → NOME, PIX, VAKINHA, redes, textos, FOTOS e VÍDEOS
+    js/script.js      → funcionamento (menu, QR Code, carrossel, galeria...)
+    imagens/          → pasta das fotos
+    videos/           → pasta dos vídeos (.mp4)
+  =====================================================================
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Natal Quilombo — Vale do Ribeira | Ação social desde 2007</title>
+  <meta name="description" content="Vamos juntos fazer um Natal mais feliz para 1.000 crianças quilombolas do Vale do Ribeira. Contribua pela vaquinha, Pix ou doando brinquedos, doces, roupas e produtos de higiene.">
+
+  <!-- Imagem e texto que aparecem quando o link é compartilhado no WhatsApp/redes -->
+  <meta property="og:title" content="Natal Quilombo — Vale do Ribeira">
+  <meta property="og:description" content="Vamos juntos fazer um Natal mais feliz para 1.000 crianças quilombolas do Vale do Ribeira. Doe pela Vakinha ou Pix.">
+  <meta property="og:image" content="imagens/capa.jpg">
+  <meta name="theme-color" content="#8E1B24">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+
+  <!-- Fontes do Google: Fraunces (títulos) + Nunito Sans (textos) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- =================================================================
+       CABEÇALHO (fica fixo no topo enquanto rola a página)
+       ================================================================= -->
+  <header class="cabecalho" id="cabecalho">
+    <div class="container cabecalho__conteudo">
+
+      <a href="#inicio" class="logo" id="logo">
+        <svg class="logo__icone" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 21l1.6-7L2 9.2l7.1-.6L12 2z"/>
+        </svg>
+        <span data-config="nomeDaAcao">Natal Quilombo</span>
+      </a>
+
+      <nav class="menu" id="menu" aria-label="Menu principal">
+        <a href="#inicio"  class="menu__link" id="menu-inicio">Início</a>
+        <a href="#sobre"   class="menu__link" id="menu-sobre">Sobre nós</a>
+        <a href="#fotos"   class="menu__link" id="menu-fotos">Fotos e Vídeos</a>
+        <a href="#contato" class="menu__link" id="menu-contato">Contato</a>
+        <a href="#doar"    class="botao botao--primario menu__doar" id="menu-doar">Doar</a>
+      </nav>
+
+      <button class="menu-celular" id="botao-menu" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+
+  <main>
+
+    <!-- =================================================================
+         SEÇÃO 1 — INÍCIO
+         ================================================================= -->
+    <section class="inicio" id="inicio">
+
+      <img class="inicio__fundo" id="inicio-fundo" src="imagens/capa.jpg" alt="" aria-hidden="true">
+
+      <div class="container inicio__conteudo">
+        <p class="inicio__chamada" id="texto-chamada">
+          Há <strong data-anos>19</strong> anos levando o Natal para crianças quilombolas do Vale do Ribeira
+        </p>
+
+        <h1 class="inicio__titulo" id="texto-titulo-inicio">
+          Um Natal mais feliz para 1.000 crianças quilombolas.
+        </h1>
+
+        <p class="inicio__texto" id="texto-subtitulo-inicio">
+          Desde 2007 levamos brinquedos, doces, roupas, produtos de higiene e muito carinho
+          para comunidades quilombolas do Vale do Ribeira. Sua ajuda transforma o Natal de uma criança.
+        </p>
+
+        <div class="inicio__botoes">
+          <a href="#doar"  class="botao botao--primario botao--grande" id="botao-quero-doar">Quero doar</a>
+          <a href="#sobre" class="botao botao--claro botao--grande" id="botao-conheca">Conheça a ação</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Faixa de números de impacto (os números ficam no config.js) -->
+    <section class="numeros" aria-label="Nossos números">
+      <div class="container numeros__grade">
+        <div class="numero">
+          <span class="numero__valor" data-anos>19</span>
+          <span class="numero__rotulo">anos de ação</span>
+        </div>
+        <div class="numero">
+          <span class="numero__valor"><span data-contador="criancas">0</span>+</span>
+          <span class="numero__rotulo">crianças por ano</span>
+        </div>
+        <div class="numero">
+          <span class="numero__valor"><span data-contador="itens">0</span>+</span>
+          <span class="numero__rotulo">itens entregues por ano</span>
+        </div>
+        <div class="numero">
+          <span class="numero__valor"><span data-contador="voluntarios">0</span></span>
+          <span class="numero__rotulo">voluntários fixos</span>
+          <span class="numero__detalhe">+ quem ajuda na montagem e na entrega</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bloco de doação (Pix + Vakinha) -->
+    <section class="doar" id="doar">
+      <div class="container doar__grade">
+
+        <div class="doar__texto revelar">
+          <p class="sobretitulo">Como ajudar</p>
+          <h2 class="titulo-secao" id="texto-titulo-doar">Doe pelo Pix ou Vakinha e faça parte deste Natal</h2>
+          <p id="texto-doar">
+            Contribua com qualquer valor pela vaquinha ou pelo Pix. Todo o valor arrecadado
+            é destinado ao projeto, com prestação de contas e comprovantes dos gastos.
+          </p>
+
+          <ul class="lista-valores" id="lista-valores">
+            <li><strong>R$ 20</strong> ajuda com doces e produtos de higiene</li>
+            <li><strong>R$ 50</strong> contribui com brinquedos e roupas</li>
+            <li><strong>R$ 100</strong> fortalece o kit completo de uma criança</li>
+          </ul>
+
+          <p class="doar__obs">
+            <span id="texto-obs-doar">Quer doar brinquedos, doces, roupas ou produtos de higiene?</span>
+            <a href="#contato">Fale com a gente pelas redes sociais</a>.
+          </p>
+        </div>
+
+        <div class="cartao-pix revelar">
+          <div class="cartao-pix__topo">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="cartao-pix__icone">
+              <path d="M12 2.5l3.6 3.6-3.6 3.6-3.6-3.6L12 2.5zm6.1 6.1l3.4 3.4-3.4 3.4-3.4-3.4 3.4-3.4zM5.9 8.6L9.3 12l-3.4 3.4L2.5 12l3.4-3.4zM12 14.3l3.6 3.6-3.6 3.6-3.6-3.6 3.6-3.6z"/>
+            </svg>
+            <span>Doação via Pix</span>
+          </div>
+
+          <div class="cartao-pix__qr" id="pix-qrcode" aria-label="QR Code do Pix"></div>
+          <p class="cartao-pix__dica">Abra o app do seu banco e escaneie</p>
+
+          <div class="cartao-pix__dados">
+            <span class="cartao-pix__rotulo">Chave Pix</span>
+            <span class="cartao-pix__chave" id="pix-chave">—</span>
+            <span class="cartao-pix__rotulo">Recebedor</span>
+            <span id="pix-recebedor">—</span>
+          </div>
+
+          <button class="botao botao--primario botao--largo" id="botao-copiar-chave" type="button">
+            Copiar chave Pix
+          </button>
+          <button class="botao botao--contorno botao--largo" id="botao-copiar-codigo" type="button">
+            Copiar código "Pix Copia e Cola"
+          </button>
+
+          <div class="cartao-pix__vakinha" id="bloco-vakinha">
+            <span class="cartao-pix__ou">ou</span>
+            <a class="botao botao--verde botao--largo" id="botao-vakinha" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C1 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.5h2c.7-1.3 2.2-2.5 4.3-2.5 3.7 0 5.7 3.9 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+              Doar pela Vakinha
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =================================================================
+         SEÇÃO 2 — SOBRE NÓS
+         ================================================================= -->
+    <section class="sobre" id="sobre">
+      <div class="container sobre__grade">
+
+        <div class="sobre__imagem revelar">
+          <div class="carrossel" id="carrossel" aria-roledescription="carrossel" aria-label="Fotos e vídeos da ação">
+            <div class="carrossel__trilho" id="carrossel-trilho"></div>
+
+            <button class="carrossel__seta carrossel__seta--esq" id="carrossel-anterior" type="button" aria-label="Slide anterior">‹</button>
+            <button class="carrossel__seta carrossel__seta--dir" id="carrossel-proximo" type="button" aria-label="Próximo slide">›</button>
+            <div class="carrossel__pontos" id="carrossel-pontos"></div>
+          </div>
+
+          <div class="sobre__selo">
+            <span>desde</span>
+            <strong id="selo-ano">2007</strong>
+          </div>
+        </div>
+
+        <div class="sobre__texto revelar">
+          <p class="sobretitulo">Sobre nós</p>
+          <h2 class="titulo-secao" id="texto-titulo-sobre">Uma tradição feita de gente que se importa</h2>
+          <p id="texto-sobre-1">
+            Tudo começou em 2007, quando um pequeno grupo de amigos decidiu levar brinquedos
+            e alegria para as crianças das comunidades quilombolas do Vale do Ribeira no Natal.
+            A emoção daquele dia foi tão grande que virou compromisso.
+          </p>
+          <p id="texto-sobre-2">
+            Todos os anos arrecadamos, organizamos e entregamos brinquedos, doces, roupas e
+            produtos de higiene — sempre com prestação de contas, transparência e respeito à
+            história, à cultura e às famílias da comunidade.
+          </p>
+        </div>
+      </div>
+
+      <div class="container">
+        <ol class="etapas">
+          <li class="etapa revelar">
+            <span class="etapa__numero">01</span>
+            <h3>Arrecadação</h3>
+            <p>Recebemos doações em dinheiro (Pix e Vakinha), brinquedos, doces, roupas e produtos de higiene.</p>
+          </li>
+          <li class="etapa revelar">
+            <span class="etapa__numero">02</span>
+            <h3>Montagem</h3>
+            <p>Voluntários separam, conferem e montam os kits com todo cuidado para cada faixa etária.</p>
+          </li>
+          <li class="etapa revelar">
+            <span class="etapa__numero">03</span>
+            <h3>Entrega e Transparência</h3>
+            <p>Entregamos nas comunidades quilombolas do Vale do Ribeira com prestação de contas e comprovantes.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+
+    <!-- =================================================================
+         SEÇÃO 3 — FOTOS E VÍDEOS (preenchida pelo js/config.js)
+         ================================================================= -->
+    <section class="fotos" id="fotos">
+      <div class="container">
+        <div class="cabecalho-secao revelar">
+          <p class="sobretitulo">Registros reais</p>
+          <h2 class="titulo-secao">Momentos que guardamos no coração</h2>
+        </div>
+
+        <div class="abas revelar" role="tablist" aria-label="Categorias da galeria">
+          <button class="aba aba--ativa" role="tab" type="button" data-aba="entrega"  id="aba-entrega"  aria-selected="true">Entrega <span class="aba__total"></span></button>
+          <button class="aba"            role="tab" type="button" data-aba="montagem" id="aba-montagem" aria-selected="false">Montagem <span class="aba__total"></span></button>
+          <button class="aba"            role="tab" type="button" data-aba="videos"   id="aba-videos"   aria-selected="false">Vídeos <span class="aba__total"></span></button>
+        </div>
+
+        <div class="galeria galeria--ativa" data-aba="entrega" role="tabpanel" aria-labelledby="aba-entrega"></div>
+        <div class="galeria" data-aba="montagem" role="tabpanel" aria-labelledby="aba-montagem" hidden></div>
+        <div class="galeria" data-aba="videos" role="tabpanel" aria-labelledby="aba-videos" hidden></div>
+
+        <div class="galeria__rodape">
+          <button class="botao botao--contorno" id="botao-ver-mais" type="button" hidden>Ver mais</button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- =================================================================
+         SEÇÃO 4 — CONTATO
+         ================================================================= -->
+    <section class="contato" id="contato">
+      <div class="container contato__conteudo revelar">
+        <p class="sobretitulo sobretitulo--claro">Contato</p>
+        <h2 class="titulo-secao">Vamos conversar?</h2>
+        <p class="contato__texto">
+          Quer ser voluntário, doar brinquedos, doces, roupas ou produtos de higiene,
+          ou acompanhar a prestação de contas? Fale com a gente nas nossas redes.
+        </p>
+
+        <div class="redes" id="redes">
+          <a class="rede" data-rede="instagram" target="_blank" rel="noopener" id="link-instagram">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0 8.2a3.2 3.2 0 110-6.4 3.2 3.2 0 010 6.4zM17.3 5.5a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4zM21.9 7.9c-.1-1.6-.4-3-1.6-4.2S17.7 2.2 16.1 2.1C14.4 2 9.6 2 7.9 2.1 6.3 2.2 4.9 2.5 3.7 3.7S2.2 6.3 2.1 7.9C2 9.6 2 14.4 2.1 16.1c.1 1.6.4 3 1.6 4.2s2.6 1.5 4.2 1.6c1.7.1 6.5.1 8.2 0 1.6-.1 3-.4 4.2-1.6s1.5-2.6 1.6-4.2c.1-1.7.1-6.5 0-8.2zm-2.1 10a3.3 3.3 0 01-1.9 1.9c-1.3.5-4.4.4-5.9.4s-4.6.1-5.9-.4a3.3 3.3 0 01-1.9-1.9c-.5-1.3-.4-4.4-.4-5.9s-.1-4.6.4-5.9a3.3 3.3 0 011.9-1.9c1.3-.5 4.4-.4 5.9-.4s4.6-.1 5.9.4a3.3 3.3 0 011.9 1.9c.5 1.3.4 4.4.4 5.9s.1 4.6-.4 5.9z"/></svg>
+            <span>Instagram</span>
+          </a>
+          <a class="rede" data-rede="youtube" target="_blank" rel="noopener" id="link-youtube">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 7.2a3 3 0 00-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 001 7.2 31 31 0 00.5 12a31 31 0 00.5 4.8 3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.5-4.8 31 31 0 00-.5-4.8zM9.7 15V9l5.8 3-5.8 3z"/></svg>
+            <span>YouTube</span>
+          </a>
+          <a class="rede" data-rede="tiktok" target="_blank" rel="noopener" id="link-tiktok">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 5.8A4.3 4.3 0 0115.5 3h-3.1v12.4a2.6 2.6 0 11-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.7 5.7 0 105 5.7V9a7.4 7.4 0 004.3 1.4V7.3a4.3 4.3 0 01-3.3-1.5z"/></svg>
+            <span>TikTok</span>
+          </a>
+          <a class="rede" data-rede="whatsapp" target="_blank" rel="noopener" id="link-whatsapp">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 01-4-3.5c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 00-.8.4 3.4 3.4 0 00-1 2.5 5.9 5.9 0 001.2 3.1 13.4 13.4 0 005.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 002-1.4 2.5 2.5 0 00.2-1.4c-.1-.1-.3-.2-.6-.3zM12 21.8a9.8 9.8 0 01-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1112 21.8zM20.5 3.5A11.8 11.8 0 001.9 17.7L.2 24l6.4-1.7A11.8 11.8 0 0024 12a11.7 11.7 0 00-3.5-8.5z"/></svg>
+            <span>WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <footer class="rodape">
+    <div class="container rodape__conteudo">
+      <p>
+        © <span id="ano-atual">2026</span> <span data-config="nomeDaAcao">Natal Quilombo</span>.
+        Vale do Ribeira — Feito com carinho por voluntários.
+      </p>
+      <div class="rodape__acoes">
+        <a href="editor.html" class="rodape__editor" id="botao-editor">Área do Editor</a>
+        <a href="#inicio" class="rodape__topo" id="botao-voltar-topo">Voltar ao topo ↑</a>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- Janela que abre a foto ou vídeo em tela cheia (galeria) -->
+  <div class="visualizador" id="visualizador" role="dialog" aria-modal="true" aria-label="Foto ou vídeo ampliado" hidden>
+    <button class="visualizador__fechar" id="visualizador-fechar" aria-label="Fechar">×</button>
+    <button class="visualizador__seta visualizador__seta--esq" id="visualizador-anterior" aria-label="Anterior">‹</button>
+    <div class="visualizador__midia" id="visualizador-midia"></div>
+    <div class="visualizador__legenda" id="visualizador-legenda"></div>
+    <button class="visualizador__seta visualizador__seta--dir" id="visualizador-proxima" aria-label="Próximo">›</button>
+  </div>
+
+  <!-- Aviso rápido "Copiado!" -->
+  <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+
+  <script src="js/vendor/qrcode.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>

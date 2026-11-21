@@ -1,0 +1,1609 @@
+/* =====================================================================
+   ESTILOS DO SITE — style.css
+   ---------------------------------------------------------------------
+   Índice:
+     1. CORES E VARIÁVEIS  ✏️  (troque as cores do site aqui!)
+     2. Base (reset e padrões)
+     3. Componentes reutilizáveis (botões, títulos, container)
+     4. Cabeçalho e menu
+     5. Seção Início (capa + números)
+     6. Bloco de doação (Pix)
+     7. Seção Sobre nós
+     8. Seção Fotos (galeria + visualizador)
+     9. Seção Contato
+    10. Rodapé e aviso "Copiado!"
+    11. Animações
+    12. Responsivo (tablet e celular)
+   ===================================================================== */
+
+
+/* =====================================================================
+   1. CORES E VARIÁVEIS  ✏️
+   Para mudar as cores do site inteiro, troque os códigos abaixo.
+   Dica: use https://htmlcolorcodes.com/pt/ para escolher cores.
+   ===================================================================== */
+:root {
+  /* Cores principais (paleta natalina) */
+  --cor-vermelho:        #A3202B;  /* botões, destaques, seção contato */
+  --cor-vermelho-escuro: #7C1620;  /* botão quando passa o mouse */
+  --cor-verde:           #1F5A3D;  /* faixa de números */
+  --cor-verde-escuro:    #123826;  /* fundos escuros */
+  --cor-dourado:         #E3AC42;  /* estrelas, números, detalhes */
+
+  /* Fundos claros */
+  --cor-creme:           #FBF6EC;  /* fundo principal */
+  --cor-papel:           #F3E8D5;  /* fundo alternativo (seção Sobre) */
+  --cor-branco:          #FFFFFF;
+
+  /* Textos */
+  --cor-texto:           #2A201B;  /* texto principal */
+  --cor-texto-suave:     #6A5A4F;  /* texto secundário */
+
+  /* Fontes */
+  --fonte-titulo: "Fraunces", Georgia, serif;
+  --fonte-texto:  "Nunito Sans", system-ui, sans-serif;
+
+  /* Medidas */
+  --largura-maxima: 1180px;     /* largura máxima do conteúdo */
+  --raio:           18px;       /* arredondamento dos cantos */
+  --altura-cabecalho: 76px;
+
+  /* Sombras */
+  --sombra-suave: 0 2px 6px rgba(42, 32, 27, .06), 0 12px 32px rgba(42, 32, 27, .08);
+  --sombra-forte: 0 4px 12px rgba(42, 32, 27, .10), 0 24px 60px rgba(42, 32, 27, .16);
+
+  /* Textura de "papel" usada nos fundos (ruído bem sutil) */
+  --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+}
+
+
+/* =====================================================================
+   2. BASE
+   ===================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;                         /* rolagem suave ao clicar no menu */
+  scroll-padding-top: var(--altura-cabecalho);     /* não esconde o título atrás do cabeçalho */
+}
+
+body {
+  font-family: var(--fonte-texto);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--cor-texto);
+  background-color: var(--cor-creme);
+  background-image: var(--textura);
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+/* Contorno visível ao navegar pelo teclado (acessibilidade) */
+:focus-visible {
+  outline: 3px solid var(--cor-dourado);
+  outline-offset: 3px;
+}
+
+
+/* =====================================================================
+   3. COMPONENTES REUTILIZÁVEIS
+   ===================================================================== */
+
+/* Centraliza o conteúdo e limita a largura */
+.container {
+  width: 100%;
+  max-width: var(--largura-maxima);
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 40px);
+}
+
+/* Palavra pequena acima dos títulos (ex: "Sobre nós") */
+.sobretitulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--cor-vermelho);
+  margin-bottom: 14px;
+}
+
+/* Estrelinha antes do sobretítulo */
+.sobretitulo::before {
+  content: "✦";
+  color: var(--cor-dourado);
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.sobretitulo--claro {
+  color: var(--cor-dourado);
+}
+
+/* Títulos das seções */
+.titulo-secao {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: clamp(1.9rem, 4vw, 2.9rem);
+  line-height: 1.12;
+  letter-spacing: -.02em;
+  margin-bottom: 20px;
+  text-wrap: balance;
+}
+
+.cabecalho-secao {
+  max-width: 640px;
+  margin-bottom: 44px;
+}
+
+/* ---- Botões ---- */
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: .95rem;
+  letter-spacing: .01em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform .2s ease, background-color .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.botao:hover {
+  transform: translateY(-2px);
+}
+
+.botao:active {
+  transform: translateY(0);
+}
+
+/* Botão vermelho (principal) */
+.botao--primario {
+  background: var(--cor-vermelho);
+  color: var(--cor-branco);
+  box-shadow: 0 6px 18px rgba(163, 32, 43, .35);
+}
+
+.botao--primario:hover {
+  background: var(--cor-vermelho-escuro);
+  box-shadow: 0 10px 24px rgba(163, 32, 43, .4);
+}
+
+/* Botão claro (sobre fotos escuras) */
+.botao--claro {
+  background: rgba(255, 255, 255, .14);
+  color: var(--cor-branco);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .55);
+}
+
+.botao--claro:hover {
+  background: var(--cor-branco);
+  color: var(--cor-texto);
+}
+
+/* Botão só com contorno */
+.botao--contorno {
+  color: var(--cor-vermelho);
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+.botao--contorno:hover {
+  background: var(--cor-vermelho);
+  color: var(--cor-branco);
+}
+
+.botao--grande {
+  padding: 16px 32px;
+  font-size: 1.02rem;
+}
+
+.botao--largo {
+  width: 100%;
+  white-space: normal;
+}
+
+/* Botão verde (Vakinha) */
+.botao--verde {
+  background: var(--cor-verde);
+  color: var(--cor-branco);
+  box-shadow: 0 6px 18px rgba(31, 90, 61, .3);
+}
+
+.botao--verde:hover {
+  background: var(--cor-verde-escuro);
+}
+
+.botao svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+
+/* =====================================================================
+   4. CABEÇALHO E MENU
+   ===================================================================== */
+.cabecalho {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  height: var(--altura-cabecalho);
+  color: var(--cor-branco);
+  transition: background-color .3s ease, box-shadow .3s ease, color .3s ease;
+}
+
+/* Quando a página é rolada, o cabeçalho ganha fundo (classe colocada pelo script.js) */
+.cabecalho--rolado {
+  background: rgba(251, 246, 236, .94);
+  backdrop-filter: blur(10px);
+  color: var(--cor-texto);
+  box-shadow: 0 1px 0 rgba(42, 32, 27, .08), 0 8px 24px rgba(42, 32, 27, .06);
+}
+
+.cabecalho__conteudo {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 1.3rem;
+  letter-spacing: -.01em;
+  text-decoration: none;
+}
+
+.logo__icone {
+  width: 28px;
+  height: 28px;
+  fill: var(--cor-dourado);
+  transition: transform .5s ease;
+}
+
+.logo:hover .logo__icone {
+  transform: rotate(72deg);
+}
+
+.logo__imagem {
+  height: 44px;
+  width: auto;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.menu__link {
+  position: relative;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: .95rem;
+  text-decoration: none;
+  opacity: .9;
+  transition: opacity .2s ease;
+}
+
+/* Linha dourada embaixo do link ativo / ao passar o mouse */
+.menu__link::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--cor-dourado);
+  transform: scaleX(0);
+  transition: transform .25s ease;
+}
+
+.menu__link:hover,
+.menu__link--ativo {
+  opacity: 1;
+}
+
+.menu__link:hover::after,
+.menu__link--ativo::after {
+  transform: scaleX(1);
+}
+
+.menu__doar {
+  margin-left: 10px;
+  padding: 10px 22px;
+}
+
+/* Botão hambúrguer (escondido no computador) */
+.menu-celular {
+  display: none;
+  width: 44px;
+  height: 44px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  border-radius: 12px;
+}
+
+.menu-celular span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform .3s ease, opacity .3s ease;
+}
+
+/* Transforma o hambúrguer em "X" quando aberto */
+.menu-celular[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.menu-celular[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.menu-celular[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+
+/* =====================================================================
+   5. SEÇÃO INÍCIO
+   ===================================================================== */
+.inicio {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;            /* altura correta no celular */
+  display: flex;
+  align-items: center;
+  padding: calc(var(--altura-cabecalho) + 40px) 0 80px;
+  color: var(--cor-branco);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Foto de fundo */
+.inicio__fundo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 52%;
+  animation: zoom-lento 18s ease-out forwards;
+}
+
+/* Película escura sobre a foto para o texto ficar legível */
+.inicio::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(18, 56, 38, .92) 0%, rgba(18, 56, 38, .7) 45%, rgba(18, 56, 38, .15) 100%),
+    linear-gradient(0deg, rgba(18, 56, 38, .6) 0%, transparent 40%);
+}
+
+.inicio__conteudo {
+  max-width: var(--largura-maxima);
+}
+
+.inicio__chamada {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--cor-dourado);
+  margin-bottom: 18px;
+  animation: subir .8s ease both;
+}
+
+.inicio__titulo {
+  max-width: 14ch;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 6.4vw, 4.8rem);
+  line-height: 1.04;
+  letter-spacing: -.025em;
+  margin-bottom: 24px;
+  text-wrap: balance;
+  animation: subir .8s .1s ease both;
+}
+
+.inicio__texto {
+  max-width: 520px;
+  font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+  opacity: .92;
+  margin-bottom: 36px;
+  animation: subir .8s .2s ease both;
+}
+
+.inicio__botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  animation: subir .8s .3s ease both;
+}
+
+/* ---- Faixa de números ---- */
+.numeros {
+  position: relative;
+  background-color: var(--cor-verde);
+  background-image: var(--textura);
+  color: var(--cor-branco);
+  padding: 44px 0;
+}
+
+.numeros__grade {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.numero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 8px;
+}
+
+/* Linha fina separando os números */
+.numero + .numero {
+  border-left: 1px solid rgba(255, 255, 255, .14);
+}
+
+.numero__valor {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: clamp(2rem, 4vw, 2.9rem);
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  color: var(--cor-dourado);
+  font-variant-numeric: tabular-nums;
+}
+
+.numero__rotulo {
+  font-size: .9rem;
+  font-weight: 600;
+  opacity: .82;
+  margin-top: 4px;
+}
+
+/* Linha extra menor (ex: "+ quem ajuda na montagem e na entrega") */
+.numero__detalhe {
+  max-width: 190px;
+  font-size: .78rem;
+  line-height: 1.4;
+  opacity: .6;
+  margin-top: 2px;
+}
+
+
+/* =====================================================================
+   6. BLOCO DE DOAÇÃO (PIX)
+   ===================================================================== */
+.doar {
+  padding: clamp(72px, 10vw, 120px) 0;
+}
+
+.doar__grade {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: clamp(40px, 6vw, 80px);
+  align-items: center;
+}
+
+.doar__texto > p {
+  color: var(--cor-texto-suave);
+  max-width: 520px;
+}
+
+.lista-valores {
+  list-style: none;
+  margin: 28px 0;
+  display: grid;
+  gap: 10px;
+  max-width: 460px;
+}
+
+.lista-valores li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--cor-branco);
+  box-shadow: var(--sombra-suave);
+  color: var(--cor-texto-suave);
+  transition: transform .2s ease;
+}
+
+.lista-valores li:hover {
+  transform: translateX(4px);
+}
+
+.lista-valores strong {
+  min-width: 64px;
+  font-family: var(--fonte-titulo);
+  font-size: 1.15rem;
+  color: var(--cor-vermelho);
+}
+
+.doar__obs {
+  font-size: .95rem;
+}
+
+.doar__obs a {
+  color: var(--cor-vermelho);
+  font-weight: 700;
+}
+
+/* ---- Cartão do Pix ---- */
+.cartao-pix {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px;
+  border-radius: calc(var(--raio) + 6px);
+  background: var(--cor-branco);
+  box-shadow: var(--sombra-forte);
+  overflow: hidden;
+}
+
+/* Faixa listrada no topo do cartão, lembrando papel de presente */
+.cartao-pix::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 8px;
+  background: repeating-linear-gradient(135deg,
+    var(--cor-vermelho) 0 14px,
+    var(--cor-branco) 14px 20px,
+    var(--cor-verde) 20px 34px,
+    var(--cor-branco) 34px 40px);
+}
+
+.cartao-pix__topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.cartao-pix__icone {
+  width: 26px;
+  height: 26px;
+  fill: #32BCAD; /* verde-água oficial do Pix */
+}
+
+.cartao-pix__qr {
+  align-self: center;
+  width: min(240px, 100%);
+  aspect-ratio: 1;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 16px;
+  background: var(--cor-creme);
+}
+
+.cartao-pix__qr img,
+.cartao-pix__qr svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+}
+
+.cartao-pix__dica {
+  text-align: center;
+  font-size: .85rem;
+  color: var(--cor-texto-suave);
+}
+
+.cartao-pix__dados {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  align-items: baseline;
+  padding: 16px 0;
+  margin-bottom: 4px;
+  border-top: 1px dashed rgba(42, 32, 27, .15);
+  border-bottom: 1px dashed rgba(42, 32, 27, .15);
+  font-size: .95rem;
+}
+
+.cartao-pix__rotulo {
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.cartao-pix__chave {
+  font-weight: 800;
+  word-break: break-all;  /* quebra chaves longas no celular */
+}
+
+/* Bloco da Vakinha com divisória "ou" */
+.cartao-pix__vakinha {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cartao-pix__vakinha[hidden] {
+  display: none;
+}
+
+.cartao-pix__ou {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.cartao-pix__ou::before,
+.cartao-pix__ou::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(42, 32, 27, .12);
+}
+
+
+/* =====================================================================
+   7. SEÇÃO SOBRE NÓS
+   ===================================================================== */
+.sobre {
+  padding: clamp(72px, 10vw, 120px) 0;
+  background-color: var(--cor-papel);
+  background-image: var(--textura);
+}
+
+.sobre__grade {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(40px, 6vw, 80px);
+  align-items: center;
+}
+
+.sobre__imagem {
+  position: relative;
+}
+
+/* ---- Carrossel de fotos e vídeos ---- */
+.carrossel {
+  position: relative;
+  border-radius: var(--raio);
+  overflow: hidden;
+  box-shadow: var(--sombra-forte);
+  background: var(--cor-verde-escuro);
+}
+
+/* O "trilho" rola na horizontal e "encaixa" em cada slide */
+.carrossel__trilho {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;            /* esconde a barra de rolagem (Firefox) */
+}
+
+.carrossel__trilho::-webkit-scrollbar {
+  display: none;                    /* esconde a barra de rolagem (Chrome/Safari) */
+}
+
+.carrossel__slide {
+  flex: 0 0 100%;
+  aspect-ratio: 4 / 3.4;
+  scroll-snap-align: start;
+}
+
+.carrossel__slide img,
+.carrossel__slide video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+  background: #000;
+}
+
+.carrossel__slide video {
+  object-fit: contain;
+  background: #0f2117;
+}
+
+/* Setas */
+.carrossel__seta {
+  position: absolute;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--cor-texto);
+  background: rgba(255, 255, 255, .85);
+  box-shadow: var(--sombra-suave);
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity .25s ease, background-color .2s ease;
+}
+
+.carrossel:hover .carrossel__seta,
+.carrossel__seta:focus-visible {
+  opacity: 1;
+}
+
+.carrossel__seta:hover        { background: var(--cor-branco); }
+.carrossel__seta--esq         { left: 14px; }
+.carrossel__seta--dir         { right: 14px; }
+
+/* Bolinhas (no topo para nunca cobrir os controles de vídeo embaixo) */
+.carrossel__pontos {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(18, 56, 38, .55);
+  backdrop-filter: blur(4px);
+  transform: translateX(-50%);
+}
+
+.carrossel__ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .55);
+  transition: width .3s ease, background-color .3s ease;
+}
+
+.carrossel__ponto--ativo {
+  width: 22px;
+  background: var(--cor-dourado);
+}
+
+/* Enquanto um vídeo toca, setas e bolinhas somem (para não cobrir os controles) */
+.carrossel--tocando .carrossel__pontos,
+.carrossel--tocando .carrossel__seta {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Selo redondo "desde 2007" (no canto superior para não cobrir controles de vídeo) */
+.sobre__selo {
+  position: absolute;
+  right: -18px;
+  top: -22px;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--cor-dourado);
+  color: var(--cor-verde-escuro);
+  box-shadow: var(--sombra-forte);
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.sobre__selo span {
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.sobre__selo strong {
+  font-family: var(--fonte-titulo);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.sobre__texto p:not(.sobretitulo) {
+  color: var(--cor-texto-suave);
+  margin-bottom: 16px;
+  max-width: 540px;
+}
+
+/* ---- Etapas (Arrecadação, Montagem, Entrega) ---- */
+.etapas {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: clamp(64px, 9vw, 100px);
+}
+
+.etapa {
+  position: relative;
+  padding: 32px 28px;
+  border-radius: var(--raio);
+  background: var(--cor-creme);
+  box-shadow: var(--sombra-suave);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.etapa:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--sombra-forte);
+}
+
+.etapa__numero {
+  display: block;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--cor-dourado);
+  margin-bottom: 16px;
+}
+
+.etapa h3 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.etapa p {
+  color: var(--cor-texto-suave);
+  font-size: .98rem;
+}
+
+
+/* =====================================================================
+   8. SEÇÃO FOTOS (abas + galeria + visualizador)
+   ===================================================================== */
+.fotos {
+  padding: clamp(72px, 10vw, 120px) 0;
+}
+
+/* ---- Abas: Entrega | Montagem | Vídeos ---- */
+.abas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  margin-bottom: 32px;
+  border-radius: 999px;
+  background: var(--cor-papel);
+  box-shadow: inset 0 1px 3px rgba(42, 32, 27, .08);
+}
+
+.aba {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: .95rem;
+  color: var(--cor-texto-suave);
+  transition: background-color .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+.aba:hover {
+  color: var(--cor-texto);
+}
+
+.aba--ativa {
+  background: var(--cor-branco);
+  color: var(--cor-vermelho);
+  box-shadow: var(--sombra-suave);
+}
+
+/* Número de itens ao lado do nome da aba */
+.aba__total {
+  min-width: 24px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: .75rem;
+  background: rgba(42, 32, 27, .08);
+  color: inherit;
+}
+
+.aba--ativa .aba__total {
+  background: var(--cor-vermelho);
+  color: var(--cor-branco);
+}
+
+/* ---- Grade de fotos e vídeos (todas do mesmo tamanho = organizado) ---- */
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  animation: aparecer .4s ease;
+}
+
+.galeria[hidden] {
+  display: none;
+}
+
+.midia {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--cor-papel);
+  box-shadow: var(--sombra-suave);
+  cursor: zoom-in;
+}
+
+.midia[hidden] {
+  display: none;
+}
+
+.midia img,
+.midia video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+  transition: transform .6s ease;
+  pointer-events: none;   /* o clique vai para o botão, não para o vídeo */
+}
+
+/* Película e "+" ao passar o mouse */
+.midia::after {
+  content: "+";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  font-weight: 300;
+  color: var(--cor-branco);
+  background: rgba(18, 56, 38, .35);
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.midia:hover img,
+.midia:hover video   { transform: scale(1.06); }
+.midia:hover::after  { opacity: 1; }
+
+/* Vídeos: botão de "play" sempre visível */
+.midia--video {
+  cursor: pointer;
+}
+
+.midia--video::after {
+  content: "";
+  opacity: 1;
+  background: linear-gradient(0deg, rgba(0, 0, 0, .35), transparent 60%);
+}
+
+.midia--video::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23A3202B' d='M8 5v14l11-7z'/%3E%3C/svg%3E") 56% 50% / 26px no-repeat,
+    rgba(255, 255, 255, .92);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
+  transition: transform .25s ease;
+}
+
+.midia--video:hover::before {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Mensagem de aba vazia */
+.galeria__vazia {
+  grid-column: 1 / -1;
+  padding: 56px 24px;
+  border-radius: var(--raio);
+  border: 2px dashed rgba(42, 32, 27, .15);
+  text-align: center;
+  font-weight: 700;
+  color: var(--cor-texto-suave);
+}
+
+.galeria__rodape {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.galeria__rodape .botao[hidden] {
+  display: none;
+}
+
+/* ---- Visualizador (foto/vídeo em tela cheia) ---- */
+.visualizador {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 70px;
+  background: rgba(12, 20, 15, .94);
+  backdrop-filter: blur(6px);
+  animation: aparecer .25s ease;
+}
+
+.visualizador[hidden] {
+  display: none;
+}
+
+.visualizador__midia {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visualizador__midia img,
+.visualizador__midia video {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+}
+
+/* Vídeo do YouTube sempre no formato 16:9 */
+.visualizador__midia iframe {
+  width: min(100%, calc((100vh - 120px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 12px;
+}
+
+.visualizador__fechar,
+.visualizador__seta {
+  position: absolute;
+  z-index: 1;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--cor-branco);
+  background: rgba(255, 255, 255, .1);
+  transition: background-color .2s ease;
+}
+
+.visualizador__fechar:hover,
+.visualizador__seta:hover {
+  background: rgba(255, 255, 255, .22);
+}
+
+.visualizador__fechar    { top: 16px; right: 16px; }
+.visualizador__seta--esq { left: 12px; }
+.visualizador__seta--dir { right: 12px; }
+
+.visualizador__legenda {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  max-width: min(720px, calc(100% - 140px));
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(12, 20, 15, .78);
+  color: rgba(255, 255, 255, .94);
+  font-size: .9rem;
+  font-weight: 600;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.visualizador__legenda:empty {
+  display: none;
+}
+
+/* Barra exibida apenas quando o site é aberto em modo rascunho do editor */
+.aviso-rascunho {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 250;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--cor-verde-escuro);
+  color: var(--cor-branco);
+  font-size: .9rem;
+  box-shadow: var(--sombra-forte);
+  border: 1.5px solid var(--cor-dourado);
+}
+
+.aviso-rascunho__acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aviso-rascunho .botao {
+  padding: 7px 14px;
+  font-size: .82rem;
+}
+
+
+/* =====================================================================
+   9. SEÇÃO CONTATO
+   ===================================================================== */
+.contato {
+  position: relative;
+  padding: clamp(80px, 11vw, 130px) 0;
+  background-color: var(--cor-vermelho);
+  background-image:
+    var(--textura),
+    radial-gradient(circle at 15% 20%, rgba(227, 172, 66, .18), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(18, 56, 38, .35), transparent 45%);
+  color: var(--cor-branco);
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Estrelas decorativas no fundo */
+.contato::before,
+.contato::after {
+  content: "✦";
+  position: absolute;
+  color: var(--cor-dourado);
+  opacity: .25;
+  pointer-events: none;
+}
+
+.contato::before { top: 12%; left: 8%;   font-size: 4rem; }
+.contato::after  { bottom: 14%; right: 9%; font-size: 6rem; }
+
+.contato__conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.contato .sobretitulo {
+  justify-content: center;
+}
+
+.contato__texto {
+  max-width: 540px;
+  opacity: .9;
+  margin-bottom: 40px;
+}
+
+.redes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.rede {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+  background: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .35);
+  transition: background-color .2s ease, color .2s ease, transform .2s ease;
+}
+
+.rede svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.rede:hover {
+  background: var(--cor-branco);
+  color: var(--cor-vermelho);
+  transform: translateY(-3px);
+}
+
+/* Rede sem link no config.js fica escondida */
+.rede[hidden] {
+  display: none;
+}
+
+
+/* =====================================================================
+   10. RODAPÉ E AVISO
+   ===================================================================== */
+.rodape {
+  background: var(--cor-verde-escuro);
+  color: rgba(255, 255, 255, .75);
+  padding: 28px 0;
+  font-size: .9rem;
+}
+
+.rodape__conteudo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rodape__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.rodape__editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .28);
+  color: rgba(255, 255, 255, .9);
+  font-size: .85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+
+.rodape__editor:hover {
+  background: rgba(255, 255, 255, .12);
+  border-color: var(--cor-dourado);
+  color: var(--cor-dourado);
+}
+
+.rodape__topo {
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--cor-dourado);
+}
+
+.rodape__topo:hover {
+  text-decoration: underline;
+}
+
+/* Aviso "Copiado!" que aparece embaixo da tela */
+.aviso {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 300;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--cor-verde-escuro);
+  color: var(--cor-branco);
+  font-weight: 700;
+  box-shadow: var(--sombra-forte);
+  transform: translate(-50%, 140%);
+  opacity: 0;
+  transition: transform .35s ease, opacity .35s ease;
+  pointer-events: none;
+}
+
+.aviso--visivel {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+
+/* =====================================================================
+   11. ANIMAÇÕES
+   ===================================================================== */
+@keyframes subir {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes aparecer {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes zoom-lento {
+  from { transform: scale(1.08); }
+  to   { transform: scale(1); }
+}
+
+/* Elementos com a classe "revelar" surgem suavemente ao rolar a página.
+   Só funciona se o JavaScript estiver ativo (classe "js" no <html>). */
+.js .revelar {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+
+.js .revelar.visivel {
+  opacity: 1;
+  transform: none;
+}
+
+/* Respeita quem prefere menos movimento (configuração do sistema) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  html { scroll-behavior: auto; }
+  .js .revelar { opacity: 1; transform: none; }
+}
+
+
+/* =====================================================================
+   12. RESPONSIVO
+   ===================================================================== */
+
+/* ---------- TABLET (até 960px) ---------- */
+@media (max-width: 960px) {
+
+  /* Menu vira uma "gaveta" que desce do topo */
+  .menu-celular {
+    display: flex;
+  }
+
+  .menu {
+    position: fixed;
+    top: var(--altura-cabecalho);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 16px 24px 28px;
+    background: var(--cor-creme);
+    color: var(--cor-texto);
+    box-shadow: 0 20px 40px rgba(42, 32, 27, .15);
+    transform: translateY(-12px);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform .3s ease, opacity .3s ease, visibility .3s;
+  }
+
+  .menu--aberto {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .menu__link {
+    padding: 14px 4px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(42, 32, 27, .08);
+  }
+
+  .menu__link::after {
+    display: none;
+  }
+
+  .menu__link--ativo {
+    color: var(--cor-vermelho);
+  }
+
+  .menu__doar {
+    margin: 16px 0 0;
+    padding: 14px;
+    font-size: 1.05rem;
+  }
+
+  /* Quando o menu está aberto, o cabeçalho fica com fundo */
+  .cabecalho:has(.menu--aberto) {
+    background: var(--cor-creme);
+    color: var(--cor-texto);
+  }
+
+  .numeros__grade {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 32px;
+  }
+
+  .numero:nth-child(3) {
+    border-left: none;
+  }
+
+  .doar__grade,
+  .sobre__grade {
+    grid-template-columns: 1fr;
+  }
+
+  .cartao-pix {
+    max-width: 440px;
+    width: 100%;
+    justify-self: center;
+  }
+
+  .sobre__imagem {
+    max-width: 620px;
+  }
+
+  .sobre__selo {
+    right: 16px;
+  }
+
+  .etapas {
+    gap: 16px;
+  }
+
+  .etapa {
+    padding: 26px 20px;
+  }
+
+  /* Galeria em 3 colunas no tablet */
+  .galeria {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* No toque não existe "passar o mouse": setas do carrossel sempre visíveis */
+  .carrossel__seta {
+    opacity: 1;
+  }
+}
+
+/* ---------- CELULAR (até 600px) ---------- */
+@media (max-width: 600px) {
+  :root {
+    --altura-cabecalho: 66px;
+  }
+
+  body {
+    font-size: 1rem;
+  }
+
+  .logo {
+    font-size: 1.12rem;
+  }
+
+  .inicio {
+    align-items: flex-end;
+  }
+
+  /* No celular a película escurece de baixo para cima */
+  .inicio::before {
+    background: linear-gradient(0deg, rgba(18, 56, 38, .95) 0%, rgba(18, 56, 38, .75) 50%, rgba(18, 56, 38, .35) 100%);
+  }
+
+  .inicio__botoes .botao {
+    flex: 1 1 100%;
+  }
+
+  .numero__rotulo {
+    font-size: .82rem;
+  }
+
+  .cartao-pix {
+    padding: 28px 22px;
+  }
+
+  .sobre__selo {
+    width: 96px;
+    height: 96px;
+    top: -16px;
+    bottom: auto;
+  }
+
+  .sobre__selo strong {
+    font-size: 1.6rem;
+  }
+
+  .etapas {
+    grid-template-columns: 1fr;
+  }
+
+  /* Galeria em 2 colunas no celular */
+  .galeria {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Abas ocupam a largura toda, sempre em uma linha */
+  .abas {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .aba {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 4px;
+    font-size: .85rem;
+  }
+
+  .aba__total {
+    min-width: 20px;
+    padding: 1px 5px;
+  }
+
+  .carrossel__seta {
+    width: 38px;
+    height: 38px;
+    font-size: 1.5rem;
+  }
+
+  .visualizador {
+    padding: 70px 12px;
+  }
+
+  .visualizador__seta {
+    top: auto;
+    bottom: 14px;
+  }
+
+  .visualizador__legenda {
+    bottom: 76px;
+    max-width: calc(100% - 24px);
+    font-size: .82rem;
+  }
+
+  .rede {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .rodape__conteudo {
+    flex-direction: column;
+    text-align: center;
+  }
+}

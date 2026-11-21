@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor do Site — Natal Quilombo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --vermelho: #A3202B;
+      --vermelho-escuro: #7C1620;
+      --verde: #1F5A3D;
+      --verde-escuro: #123826;
+      --dourado: #E3AC42;
+      --creme: #FBF6EC;
+      --papel: #F3E8D5;
+      --branco: #FFFFFF;
+      --texto: #2A201B;
+      --texto-suave: #6A5A4F;
+      --borda: rgba(42, 32, 27, .14);
+      --raio: 16px;
+      --sombra: 0 2px 10px rgba(42, 32, 27, .07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Nunito Sans", system-ui, sans-serif;
+      background: var(--creme);
+      color: var(--texto);
+      line-height: 1.55;
+      padding-bottom: 80px;
+    }
+
+    .topo {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--verde-escuro);
+      color: var(--branco);
+      padding: 14px 0;
+      box-shadow: 0 6px 24px rgba(0,0,0,.15);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .topo__conteudo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .topo__titulo {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.35rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topo__titulo span { color: var(--dourado); }
+
+    .topo__acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: none;
+      font: inherit;
+      font-size: .88rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform .15s ease, opacity .15s ease, background-color .15s ease;
+    }
+
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn--primario { background: var(--vermelho); color: var(--branco); }
+    .btn--primario:hover:not(:disabled) { background: var(--vermelho-escuro); }
+    .btn--verde { background: var(--verde); color: var(--branco); }
+    .btn--dourado { background: var(--dourado); color: var(--verde-escuro); }
+    .btn--claro { background: rgba(255,255,255,.14); color: var(--branco); }
+    .btn--contorno { background: transparent; color: var(--vermelho); box-shadow: inset 0 0 0 1.5px var(--vermelho); }
+    .btn--pequeno { padding: 6px 12px; font-size: .8rem; }
+    .btn--perigo { background: #fce8ea; color: var(--vermelho-escuro); }
+
+    .intro {
+      margin-top: 24px;
+      padding: 20px 24px;
+      border-radius: var(--raio);
+      background: var(--branco);
+      border-left: 5px solid var(--dourado);
+      box-shadow: var(--sombra);
+      display: grid;
+      gap: 8px;
+    }
+
+    .intro h1 {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.5rem;
+    }
+
+    .intro p { font-size: .94rem; color: var(--texto-suave); }
+
+    .status-pasta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .85rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: var(--papel);
+      color: var(--texto);
+      width: fit-content;
+    }
+
+    .status-pasta--ok {
+      background: #e3f3ea;
+      color: var(--verde-escuro);
+    }
+
+    .abas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 22px 0 18px;
+    }
+
+    .aba {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1.5px solid var(--borda);
+      background: var(--branco);
+      font: inherit;
+      font-weight: 800;
+      font-size: .9rem;
+      color: var(--texto-suave);
+      cursor: pointer;
+    }
+
+    .aba--ativa {
+      background: var(--vermelho);
+      border-color: var(--vermelho);
+      color: var(--branco);
+    }
+
+    .painel { display: none; }
+    .painel--ativo { display: block; }
+
+    .card {
+      background: var(--branco);
+      border-radius: var(--raio);
+      padding: 24px;
+      box-shadow: var(--sombra);
+      margin-bottom: 18px;
+    }
+
+    .card h2 {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.25rem;
+      margin-bottom: 14px;
+      color: var(--verde-escuro);
+    }
+
+    .grade-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .grade-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+
+    .campo label {
+      font-size: .84rem;
+      font-weight: 800;
+      color: var(--texto);
+    }
+
+    .campo small {
+      font-size: .78rem;
+      color: var(--texto-suave);
+    }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1.5px solid var(--borda);
+      background: #fffdf9;
+      font: inherit;
+      font-size: .94rem;
+      color: var(--texto);
+    }
+
+    textarea { min-height: 82px; resize: vertical; }
+
+    input:focus, textarea:focus, select:focus {
+      outline: 2px solid var(--dourado);
+      border-color: var(--dourado);
+    }
+
+    .valor-linha {
+      display: grid;
+      grid-template-columns: 140px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .sub-abas {
+      display: inline-flex;
+      gap: 6px;
+      padding: 5px;
+      border-radius: 999px;
+      background: var(--papel);
+      margin-bottom: 16px;
+    }
+
+    .sub-aba {
+      padding: 7px 16px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      font: inherit;
+      font-size: .88rem;
+      font-weight: 800;
+      color: var(--texto-suave);
+      cursor: pointer;
+    }
+
+    .sub-aba--ativa {
+      background: var(--branco);
+      color: var(--vermelho);
+      box-shadow: var(--sombra);
+    }
+
+    .barra-add {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--papel);
+    }
+
+    .lista-midia {
+      display: grid;
+      gap: 12px;
+    }
+
+    .item-midia {
+      display: grid;
+      grid-template-columns: 92px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1.5px solid var(--borda);
+      background: #fffdf9;
+    }
+
+    .item-midia__thumb {
+      width: 92px;
+      height: 92px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--verde-escuro);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--branco);
+      font-size: .75rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .item-midia__thumb img,
+    .item-midia__thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .item-midia__info {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .item-midia__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: .8rem;
+      color: var(--texto-suave);
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: var(--papel);
+      color: var(--texto);
+    }
+
+    .badge--foto { background: #e3f3ea; color: var(--verde-escuro); }
+    .badge--video { background: #e8eefc; color: #1d3c85; }
+    .badge--youtube { background: #fce8ea; color: var(--vermelho-escuro); }
+
+    .item-midia__controles {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .capa-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .capa-preview img {
+      width: 150px;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1.5px solid var(--borda);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 140%);
+      padding: 12px 22px;
+      border-radius: 999px;
+      background: var(--verde-escuro);
+      color: var(--branco);
+      font-weight: 700;
+      box-shadow: 0 12px 32px rgba(0,0,0,.22);
+      transition: transform .3s ease, opacity .3s ease;
+      opacity: 0;
+      z-index: 200;
+      text-align: center;
+      max-width: 90vw;
+    }
+
+    .toast--visivel { transform: translate(-50%, 0); opacity: 1; }
+
+    .passos {
+      padding-left: 20px;
+      display: grid;
+      gap: 10px;
+      color: var(--texto-suave);
+    }
+
+    .passos strong { color: var(--texto); }
+
+    .bloqueio {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .bloqueio[hidden],
+    #conteudo-editor[hidden] {
+      display: none;
+    }
+
+    .bloqueio__card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--branco);
+      border-radius: var(--raio);
+      padding: 32px 28px;
+      box-shadow: 0 18px 48px rgba(42, 32, 27, .14);
+      border-top: 6px solid var(--vermelho);
+      text-align: center;
+      display: grid;
+      gap: 14px;
+    }
+
+    .bloqueio__icone {
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .bloqueio__card h1 {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.55rem;
+      color: var(--verde-escuro);
+    }
+
+    .bloqueio__card p {
+      font-size: .92rem;
+      color: var(--texto-suave);
+    }
+
+    .bloqueio__form {
+      display: grid;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .bloqueio__erro {
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--vermelho);
+    }
+
+    .bloqueio__voltar {
+      font-size: .86rem;
+      font-weight: 700;
+      color: var(--texto-suave);
+      text-decoration: none;
+      margin-top: 4px;
+    }
+
+    .bloqueio__voltar:hover { color: var(--vermelho); text-decoration: underline; }
+
+    @media (max-width: 680px) {
+      .item-midia { grid-template-columns: 72px 1fr; }
+      .item-midia__thumb { width: 72px; height: 72px; }
+      .item-midia__controles { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+      .valor-linha { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <section class="bloqueio" id="tela-senha">
+    <div class="bloqueio__card">
+      <div class="bloqueio__icone" aria-hidden="true">🔒</div>
+      <h1>Acesso ao Editor</h1>
+      <p>Digite a senha da equipe para editar textos, links, Pix, fotos e vídeos do site.</p>
+      <form class="bloqueio__form" id="form-senha">
+        <input id="input-senha" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Digite a senha" aria-label="Senha do editor" required>
+        <p class="bloqueio__erro" id="erro-senha" hidden>Senha incorreta. Tente novamente.</p>
+        <button class="btn btn--primario" type="submit">Entrar no Editor</button>
+      </form>
+      <a class="bloqueio__voltar" href="index.html">← Voltar para o site</a>
+    </div>
+  </section>
+
+  <div id="conteudo-editor" hidden>
+  <header class="topo">
+    <div class="container topo__conteudo">
+      <div class="topo__titulo"><span>★</span> Editor do Site — Natal Quilombo</div>
+      <div class="topo__acoes">
+        <button class="btn btn--dourado" id="btn-conectar" type="button">📁 Conectar pasta do site</button>
+        <button class="btn btn--verde" id="btn-salvar-pasta" type="button" disabled>💾 Salvar na pasta</button>
+        <button class="btn btn--primario" id="btn-baixar" type="button">⬇️ Baixar config.js</button>
+        <button class="btn btn--claro" id="btn-testar" type="button">👁️ Testar no site</button>
+        <button class="btn btn--claro" id="btn-bloquear" type="button" title="Bloquear editor">🔒 Sair</button>
+        <a class="btn btn--claro" href="index.html">← Voltar ao site</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h1>Troque links, textos, fotos e vídeos sem mexer em código</h1>
+      <p>
+        <strong>Jeito mais fácil (Chrome ou Edge):</strong> clique em <strong>📁 Conectar pasta do site</strong> e escolha a pasta
+        <code>site-natal-solidario</code>. Assim, ao adicionar fotos ou vídeos do seu computador, o editor já copia os arquivos para as pastas certas e salva o <code>js/config.js</code> direto para você!
+      </p>
+      <p>
+        <strong>Alternativa (qualquer navegador):</strong> edite abaixo, clique em <strong>⬇️ Baixar config.js</strong> e substitua o arquivo dentro da pasta <code>js/</code> (colocando eventuais novas fotos em <code>imagens/</code> e vídeos em <code>videos/</code>).
+      </p>
+      <div class="status-pasta" id="status-pasta">Pasta ainda não conectada (modo download).</div>
+    </section>
+
+    <div class="abas" role="tablist">
+      <button class="aba aba--ativa" type="button" data-painel="links">1. Links, Pix e Números</button>
+      <button class="aba" type="button" data-painel="textos">2. Textos e Capa</button>
+      <button class="aba" type="button" data-painel="carrossel">3. Carrossel (Sobre nós)</button>
+      <button class="aba" type="button" data-painel="galeria">4. Galeria (Fotos e Vídeos)</button>
+      <button class="aba" type="button" data-painel="publicar">5. Como publicar no ar</button>
+    </div>
+
+    <!-- PAINEL 1: LINKS, PIX E NÚMEROS -->
+    <section class="painel painel--ativo" id="painel-links">
+      <div class="card">
+        <h2>Identificação e Números</h2>
+        <div class="grade-2">
+          <div class="campo">
+            <label for="cfg-nome">Nome da ação</label>
+            <input id="cfg-nome" type="text">
+          </div>
+          <div class="campo">
+            <label for="cfg-ano">Ano em que começou</label>
+            <input id="cfg-ano" type="number" min="1950" max="2100">
+          </div>
+        </div>
+        <div class="grade-3">
+          <div class="campo">
+            <label for="cfg-criancas">Crianças atendidas por ano</label>
+            <input id="cfg-criancas" type="number" min="0">
+          </div>
+          <div class="campo">
+            <label for="cfg-itens">Itens entregues por ano</label>
+            <input id="cfg-itens" type="number" min="0">
+          </div>
+          <div class="campo">
+            <label for="cfg-voluntarios">Voluntários fixos</label>
+            <input id="cfg-voluntarios" type="number" min="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Dados do Pix</h2>
+        <div class="grade-2">
+          <div class="campo">
+            <label for="cfg-pix-chave">Chave Pix</label>
+            <input id="cfg-pix-chave" type="text">
+            <small>Se for celular, use +55 com DDD (ex: +5511976226299). Também aceita e-mail, CPF/CNPJ ou aleatória.</small>
+          </div>
+          <div class="campo">
+            <label for="cfg-pix-recebedor">Nome do recebedor (titular da conta)</label>
+            <input id="cfg-pix-recebedor" type="text" maxlength="25">
+            <small>Até 25 caracteres, de preferência sem acentos.</small>
+          </div>
+          <div class="campo">
+            <label for="cfg-pix-cidade">Cidade da conta</label>
+            <input id="cfg-pix-cidade" type="text" maxlength="15">
+            <small>Até 15 caracteres, sem acentos (ex: SAO PAULO, ELDORADO).</small>
+          </div>
+          <div class="campo">
+            <label for="cfg-pix-img">Imagem própria do QR Code (opcional)</label>
+            <input id="cfg-pix-img" type="text" placeholder="Ex: imagens/meu-qrcode.png">
+            <small>Deixe vazio para o site gerar o QR Code automaticamente.</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Links da Vakinha e Redes Sociais</h2>
+        <div class="grade-2">
+          <div class="campo">
+            <label for="cfg-vakinha">Link da Vakinha</label>
+            <input id="cfg-vakinha" type="url" placeholder="https://www.vakinha.com.br/...">
+            <small>Deixe vazio para esconder o botão da Vakinha.</small>
+          </div>
+          <div class="campo">
+            <label for="cfg-instagram">Instagram</label>
+            <input id="cfg-instagram" type="url" placeholder="https://www.instagram.com/...">
+          </div>
+          <div class="campo">
+            <label for="cfg-whatsapp">WhatsApp (opcional)</label>
+            <input id="cfg-whatsapp" type="url" placeholder="https://wa.me/5511999999999">
+            <small>Se preencher, aparece o botão do WhatsApp na seção Contato.</small>
+          </div>
+          <div class="campo">
+            <label for="cfg-youtube">Canal do YouTube (opcional)</label>
+            <input id="cfg-youtube" type="url" placeholder="https://youtube.com/...">
+          </div>
+          <div class="campo">
+            <label for="cfg-tiktok">TikTok (opcional)</label>
+            <input id="cfg-tiktok" type="url" placeholder="https://tiktok.com/...">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAINEL 2: TEXTOS E CAPA -->
+    <section class="painel" id="painel-textos">
+      <div class="card">
+        <h2>Foto de Capa (topo do site)</h2>
+        <div class="capa-preview">
+          <img id="preview-capa" src="imagens/capa.jpg" alt="Prévia da capa">
+          <div style="flex:1; min-width:220px;">
+            <div class="campo">
+              <label for="cfg-capa">Arquivo da capa</label>
+              <input id="cfg-capa" type="text">
+            </div>
+            <button class="btn btn--contorno btn--pequeno" id="btn-trocar-capa" type="button">📷 Escolher nova foto do computador</button>
+            <input id="input-capa" type="file" accept="image/*" hidden>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Textos da Capa e Doação</h2>
+        <div class="campo">
+          <label for="cfg-titulo-site">Título da aba do navegador / Google</label>
+          <input id="cfg-titulo-site" type="text">
+        </div>
+        <div class="campo">
+          <label for="cfg-chamada">Frase pequena acima do título (use <code>{anos}</code> para calcular os anos automaticamente)</label>
+          <input id="cfg-chamada" type="text">
+        </div>
+        <div class="campo">
+          <label for="cfg-titulo-inicio">Título principal da capa</label>
+          <input id="cfg-titulo-inicio" type="text">
+        </div>
+        <div class="campo">
+          <label for="cfg-subtitulo-inicio">Subtítulo da capa</label>
+          <textarea id="cfg-subtitulo-inicio"></textarea>
+        </div>
+        <div class="campo">
+          <label for="cfg-titulo-doar">Título da seção Doar</label>
+          <input id="cfg-titulo-doar" type="text">
+        </div>
+        <div class="campo">
+          <label for="cfg-texto-doar">Texto explicativo da doação / prestação de contas</label>
+          <textarea id="cfg-texto-doar"></textarea>
+        </div>
+        <div class="campo">
+          <label for="cfg-obs-doar">Observação abaixo dos valores</label>
+          <input id="cfg-obs-doar" type="text">
+        </div>
+
+        <h3 style="margin:16px 0 10px; font-size:1rem;">Sugestões de valores</h3>
+        <div id="lista-valores-editor"></div>
+        <button class="btn btn--contorno btn--pequeno" id="btn-add-valor" type="button">+ Adicionar faixa de valor</button>
+      </div>
+
+      <div class="card">
+        <h2>Textos do "Sobre nós"</h2>
+        <div class="campo">
+          <label for="cfg-titulo-sobre">Título da seção Sobre nós</label>
+          <input id="cfg-titulo-sobre" type="text">
+        </div>
+        <div class="campo">
+          <label for="cfg-sobre-1">Primeiro parágrafo</label>
+          <textarea id="cfg-sobre-1"></textarea>
+        </div>
+        <div class="campo">
+          <label for="cfg-sobre-2">Segundo parágrafo</label>
+          <textarea id="cfg-sobre-2"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAINEL 3: CARROSSEL -->
+    <section class="painel" id="painel-carrossel">
+      <div class="card">
+        <h2>Slides do Carrossel (seção Sobre nós)</h2>
+        <div class="barra-add">
+          <button class="btn btn--verde btn--pequeno" id="carrossel-add-foto" type="button">+ Adicionar Foto (.jpg/.png)</button>
+          <button class="btn btn--verde btn--pequeno" id="carrossel-add-video" type="button">+ Adicionar Vídeo (.mp4)</button>
+          <button class="btn btn--contorno btn--pequeno" id="carrossel-add-yt" type="button">+ Adicionar YouTube (link)</button>
+          <input id="input-carrossel-foto" type="file" accept="image/*" multiple hidden>
+          <input id="input-carrossel-video" type="file" accept="video/mp4,video/*" multiple hidden>
+        </div>
+        <div class="lista-midia" id="lista-carrossel"></div>
+      </div>
+    </section>
+
+    <!-- PAINEL 4: GALERIA -->
+    <section class="painel" id="painel-galeria">
+      <div class="card">
+        <h2>Galeria de Fotos e Vídeos</h2>
+        <div class="sub-abas" role="tablist">
+          <button class="sub-aba sub-aba--ativa" type="button" data-galeria="entrega">Entrega (<span id="count-entrega">0</span>)</button>
+          <button class="sub-aba" type="button" data-galeria="montagem">Montagem (<span id="count-montagem">0</span>)</button>
+          <button class="sub-aba" type="button" data-galeria="videos">Vídeos (<span id="count-videos">0</span>)</button>
+        </div>
+
+        <div class="barra-add">
+          <button class="btn btn--verde btn--pequeno" id="galeria-add-foto" type="button">+ Adicionar Foto (.jpg/.png)</button>
+          <button class="btn btn--verde btn--pequeno" id="galeria-add-video" type="button">+ Adicionar Vídeo (.mp4)</button>
+          <button class="btn btn--contorno btn--pequeno" id="galeria-add-yt" type="button">+ Adicionar YouTube (link)</button>
+          <input id="input-galeria-foto" type="file" accept="image/*" multiple hidden>
+          <input id="input-galeria-video" type="file" accept="video/mp4,video/*" multiple hidden>
+        </div>
+
+        <div class="lista-midia" id="lista-galeria"></div>
+      </div>
+    </section>
+
+    <!-- PAINEL 5: COMO PUBLICAR -->
+    <section class="painel" id="painel-publicar">
+      <div class="card">
+        <h2>Como atualizar e publicar o site no ar</h2>
+        <ol class="passos">
+          <li><strong>Salve suas alterações:</strong> use o botão <em>💾 Salvar na pasta</em> (ou baixe o <code>js/config.js</code> e coloque novas fotos/vídeos em <code>imagens/</code> e <code>videos/</code>).</li>
+          <li><strong>Dica de leveza:</strong> tente manter vídeos diretos no site até ~20 MB (ou suba vídeos maiores no YouTube e cole o link aqui pelo botão <em>+ Adicionar YouTube</em>).</li>
+          <li><strong>No GitHub + Vercel:</strong> ao enviar a pasta atualizada para o repositório no GitHub (ou rodar <code>npx vercel --prod</code>), a Vercel publica a nova versão automaticamente em segundos.</li>
+          <li><strong>Alternativa (Netlify Drop):</strong> você também pode arrastar a pasta <code>site-natal-solidario</code> inteira em <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>.</li>
+        </ol>
+        <div style="margin-top:18px;">
+          <button class="btn btn--perigo btn--pequeno" id="btn-limpar-rascunho" type="button">↩️ Descartar rascunho e recarregar do config.js</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/editor.js"></script>
+</body>
+</html>
