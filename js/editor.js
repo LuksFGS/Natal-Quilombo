@@ -530,7 +530,7 @@
     }
     try {
       localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
-      avisar("✓ Alterações salvas! (Para exportar o arquivo config.js, use a aba 6. Programadores)");
+      avisar("Alterações Salvas!");
     } catch (_) {
       avisar("Não foi possível salvar no navegador.");
     }
