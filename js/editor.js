@@ -503,8 +503,8 @@
     await writable.close();
   }
 
-  btnSalvarPasta.addEventListener("click", async function () {
-    if (!pastaRaiz) return;
+  async function salvarNaPastaConectada() {
+    if (!pastaRaiz) return false;
     btnSalvarPasta.disabled = true;
     try {
       for (const [destino, file] of arquivosPendentes.entries()) {
@@ -512,14 +512,33 @@
       }
       await escreverArquivoNaPasta(pastaRaiz, "js/config.js", gerarTextoConfigJs());
       arquivosPendentes.clear();
-      localStorage.removeItem(CHAVE_RASCUNHO);
+      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
       avisar("✓ Tudo salvo na pasta (config.js + fotos/vídeos novos)!");
+      return true;
     } catch (err) {
       avisar("Erro ao salvar na pasta: " + err.message);
+      return false;
     } finally {
       btnSalvarPasta.disabled = false;
     }
-  });
+  }
+
+  async function salvarGeral() {
+    if (pastaRaiz) {
+      await salvarNaPastaConectada();
+      return;
+    }
+    try {
+      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
+      avisar("✓ Alterações salvas! (Para exportar o arquivo config.js, use a aba 6. Programadores)");
+    } catch (_) {
+      avisar("Não foi possível salvar no navegador.");
+    }
+  }
+
+  btnSalvarPasta.addEventListener("click", salvarNaPastaConectada);
+  document.getElementById("btn-salvar-topo").addEventListener("click", salvarGeral);
+  document.getElementById("btn-salvar-publicar").addEventListener("click", salvarGeral);
 
   /* -------------------------------------------------------------------
      BAIXAR config.js (funciona em qualquer navegador)
@@ -547,7 +566,7 @@
   /* -------------------------------------------------------------------
      TESTAR NO SITE (rascunho no navegador)
      ------------------------------------------------------------------- */
-  document.getElementById("btn-testar").addEventListener("click", function () {
+  function testarNoSite() {
     try {
       localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
       if (arquivosPendentes.size > 0 && !pastaRaiz) {
@@ -557,7 +576,10 @@
     } catch (err) {
       avisar("Não foi possível salvar o rascunho no navegador.");
     }
-  });
+  }
+
+  document.getElementById("btn-testar").addEventListener("click", testarNoSite);
+  document.getElementById("btn-testar-publicar").addEventListener("click", testarNoSite);
 
   document.getElementById("btn-limpar-rascunho").addEventListener("click", function () {
     localStorage.removeItem(CHAVE_RASCUNHO);

@@ -17,24 +17,22 @@ const parametrosUrl = new URLSearchParams(window.location.search);
 let cfg = CONFIG;
 let emModoRascunho = false;
 
-if (parametrosUrl.get("rascunho") === "1") {
-  try {
-    const salvo = localStorage.getItem(CHAVE_RASCUNHO);
-    if (salvo) {
-      const parsed = JSON.parse(salvo);
-      if (parsed && typeof parsed === "object") {
-        cfg = Object.assign({}, CONFIG, parsed);
-        cfg.pix = Object.assign({}, CONFIG.pix, parsed.pix || {});
-        cfg.numeros = Object.assign({}, CONFIG.numeros, parsed.numeros || {});
-        cfg.redes = Object.assign({}, CONFIG.redes, parsed.redes || {});
-        cfg.textos = Object.assign({}, CONFIG.textos, parsed.textos || {});
-        cfg.galeria = Object.assign({}, CONFIG.galeria, parsed.galeria || {});
-        emModoRascunho = true;
-      }
+try {
+  const salvo = localStorage.getItem(CHAVE_RASCUNHO);
+  if (salvo) {
+    const parsed = JSON.parse(salvo);
+    if (parsed && typeof parsed === "object") {
+      cfg = Object.assign({}, CONFIG, parsed);
+      cfg.pix = Object.assign({}, CONFIG.pix, parsed.pix || {});
+      cfg.numeros = Object.assign({}, CONFIG.numeros, parsed.numeros || {});
+      cfg.redes = Object.assign({}, CONFIG.redes, parsed.redes || {});
+      cfg.textos = Object.assign({}, CONFIG.textos, parsed.textos || {});
+      cfg.galeria = Object.assign({}, CONFIG.galeria, parsed.galeria || {});
+      emModoRascunho = parametrosUrl.get("rascunho") === "1";
     }
-  } catch (erro) {
-    console.warn("Não foi possível carregar o rascunho:", erro);
   }
+} catch (erro) {
+  console.warn("Não foi possível carregar o rascunho:", erro);
 }
 
 if (emModoRascunho) {

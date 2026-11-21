@@ -476,10 +476,10 @@
     .bloqueio__voltar:hover { color: var(--vermelho); text-decoration: underline; }
 
     @media (max-width: 680px) {
-      .topo { padding: 7px 0; }
-      .topo__titulo { font-size: .98rem; }
-      .topo__acoes { gap: 6px; }
-      .topo__acoes .btn { padding: 6px 10px; font-size: .78rem; }
+      .topo { padding: 6px 0; }
+      .topo__titulo { font-size: .88rem; }
+      .topo__acoes { gap: 5px; }
+      .topo__acoes .btn { padding: 5px 9px; font-size: .74rem; }
       .item-midia { grid-template-columns: 72px 1fr; }
       .item-midia__thumb { width: 72px; height: 72px; }
       .item-midia__controles { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
@@ -508,6 +508,7 @@
     <div class="container topo__conteudo">
       <div class="topo__titulo"><span>★</span> Editor do Site — Natal Quilombo</div>
       <div class="topo__acoes">
+        <button class="btn btn--verde" id="btn-salvar-topo" type="button">💾 Salvar</button>
         <button class="btn btn--claro" id="btn-bloquear" type="button" title="Bloquear editor">🔒 Sair</button>
         <a class="btn btn--claro" href="index.html">← Voltar ao site</a>
       </div>
@@ -520,7 +521,8 @@
       <button class="aba" type="button" data-painel="textos">2. Textos e Capa</button>
       <button class="aba" type="button" data-painel="carrossel">3. Carrossel (Sobre nós)</button>
       <button class="aba" type="button" data-painel="galeria">4. Galeria (Fotos e Vídeos)</button>
-      <button class="aba" type="button" data-painel="programadores">5. Programadores</button>
+      <button class="aba" type="button" data-painel="publicar">5. Como publicar no ar</button>
+      <button class="aba" type="button" data-painel="programadores">6. Programadores</button>
     </div>
 
     <!-- PAINEL 1: LINKS, PIX E NÚMEROS -->
@@ -715,7 +717,23 @@
       </div>
     </section>
 
-    <!-- PAINEL 5: PROGRAMADORES -->
+    <!-- PAINEL 5: COMO PUBLICAR -->
+    <section class="painel" id="painel-publicar">
+      <div class="card">
+        <h2>Como atualizar e publicar o site no ar</h2>
+        <ol class="passos">
+          <li><strong>Salve suas alterações:</strong> use o botão <em>💾 Salvar</em> no topo ou abaixo para gravar suas edições (ou baixe o <code>js/config.js</code> na aba Programadores e coloque novas fotos/vídeos em <code>imagens/</code> e <code>videos/</code>).</li>
+          <li><strong>Dica de leveza:</strong> tente manter vídeos diretos no site até ~20 MB (ou suba vídeos maiores no YouTube e cole o link aqui pelo botão <em>+ Adicionar YouTube</em>).</li>
+        </ol>
+        <div class="intro__botoes" style="margin-top:18px;">
+          <button class="btn btn--verde" id="btn-salvar-publicar" type="button">💾 Salvar alterações</button>
+          <button class="btn btn--contorno" id="btn-testar-publicar" type="button">👁️ Testar no site</button>
+          <button class="btn btn--perigo btn--pequeno" id="btn-limpar-rascunho" type="button">↩️ Descartar rascunho e recarregar do config.js</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAINEL 6: PROGRAMADORES -->
     <section class="painel" id="painel-programadores">
       <div class="intro">
         <h2>Troque links, textos, fotos e vídeos sem mexer em código</h2>
@@ -736,16 +754,11 @@
       </div>
 
       <div class="card">
-        <h2>Como atualizar e publicar o site no ar</h2>
+        <h2>Publicação e Hospedagem (GitHub, Vercel e Netlify)</h2>
         <ol class="passos">
-          <li><strong>Salve suas alterações:</strong> use o botão <em>💾 Salvar na pasta</em> acima (ou baixe o <code>js/config.js</code> e coloque novas fotos/vídeos em <code>imagens/</code> e <code>videos/</code>).</li>
-          <li><strong>Dica de leveza:</strong> tente manter vídeos diretos no site até ~20 MB (ou suba vídeos maiores no YouTube e cole o link aqui pelo botão <em>+ Adicionar YouTube</em>).</li>
           <li><strong>No GitHub + Vercel:</strong> ao enviar a pasta atualizada para o repositório no GitHub (ou rodar <code>npx vercel --prod</code>), a Vercel publica a nova versão automaticamente em segundos.</li>
           <li><strong>Alternativa (Netlify Drop):</strong> você também pode arrastar a pasta <code>site-natal-solidario</code> inteira em <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>.</li>
         </ol>
-        <div style="margin-top:18px;">
-          <button class="btn btn--perigo btn--pequeno" id="btn-limpar-rascunho" type="button">↩️ Descartar rascunho e recarregar do config.js</button>
-        </div>
       </div>
     </section>
   </main>
