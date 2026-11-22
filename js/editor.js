@@ -235,21 +235,58 @@
   /* -------------------------------------------------------------------
      ENVIO DE ARQUIVO PARA NUVEM (Vercel Blob) OU SERVIDOR LOCAL
      ------------------------------------------------------------------- */
+  const API_NUVEM_PADRAO = "https://natal-quilombo.vercel.app";
+
+  async function solicitarTokenUpload(pathname) {
+    const endpoints = ["/api/upload"];
+    if (!window.location.hostname.includes("natal-quilombo.vercel.app") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      endpoints.push(API_NUVEM_PADRAO + "/api/upload");
+    }
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-editor-senha": SENHA_EDITOR
+          },
+          body: JSON.stringify({ pathname })
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  async function salvarConfigNaNuvem(configObj) {
+    const endpoints = ["/api/config"];
+    if (!window.location.hostname.includes("natal-quilombo.vercel.app") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      endpoints.push(API_NUVEM_PADRAO + "/api/config");
+    }
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-editor-senha": SENHA_EDITOR
+          },
+          body: JSON.stringify({ config: configObj })
+        });
+        if (res.ok) return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
   async function enviarArquivoParaServidorOuNuvem(caminhoDestino, blob) {
     // 1. Tenta obter token de upload direto para Vercel Blob (/api/upload POST)
     try {
-      const tokenRes = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-editor-senha": SENHA_EDITOR
-        },
-        body: JSON.stringify({ pathname: caminhoDestino })
-      });
-
-      if (tokenRes.ok) {
-        const tokenData = await tokenRes.json();
-        if (tokenData && tokenData.clientToken) {
+      const tokenData = await solicitarTokenUpload(caminhoDestino);
+      if (tokenData) {
+        if (tokenData.clientToken) {
           const partesToken = tokenData.clientToken.split("_");
           const storeId = partesToken[3] || "";
           const reqId = storeId + ":" + Date.now() + ":" + Math.random().toString(16).slice(2);
@@ -276,7 +313,7 @@
               return blobInfo.url;
             }
           }
-        } else if (tokenData && tokenData.localUpload) {
+        } else if (tokenData.localUpload) {
           // Servidor local (localhost): envia via PUT /api/upload?pathname=...
           const localPut = await fetch(
             "/api/upload?pathname=" + encodeURIComponent(caminhoDestino),
@@ -827,16 +864,7 @@
       }
 
       // 3. Salva configuração global no servidor/nuvem (/api/config) para todos os aparelhos
-      try {
-        await fetch("/api/config", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-editor-senha": SENHA_EDITOR
-          },
-          body: JSON.stringify({ config: estado })
-        });
-      } catch (_) {}
+      await salvarConfigNaNuvem(estado);
 
       // 4. Se pasta local estiver conectada, grava também na pasta
       if (pastaRaiz) {
@@ -891,16 +919,7 @@
     previewsLocais.clear();
     await limparBancoMidia();
     estado = clonar(CONFIG);
-    try {
-      await fetch("/api/config", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-editor-senha": SENHA_EDITOR
-        },
-        body: JSON.stringify({ config: estado })
-      });
-    } catch (_) {}
+    await salvarConfigNaNuvem(estado);
     inicializarCampos();
     renderValores();
     renderCarrossel();
@@ -961,16 +980,24 @@
   }
 
   async function sincronizarEstadoRemoto() {
-    try {
-      const res = await fetch("/api/config?t=" + Date.now(), { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.ok && data.config) {
-          estado = mesclarConfig(CONFIG, data.config);
-          try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+    const endpoints = ["/api/config?t=" + Date.now()];
+    if (!window.location.hostname.includes("natal-quilombo.vercel.app") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      endpoints.push(API_NUVEM_PADRAO + "/api/config?t=" + Date.now());
+    }
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ok && data.config) {
+            estado = mesclarConfig(CONFIG, data.config);
+            try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+            return;
+          }
+          if (data && data.blobConfigured === true) return;
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
   }
 
   async function desbloquearEditor() {

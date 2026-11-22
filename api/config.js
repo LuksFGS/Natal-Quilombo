@@ -1,10 +1,32 @@
 const { put, list } = require("@vercel/blob");
 
+const CLOUD_FALLBACK_ORIGIN = "https://natal-quilombo.vercel.app";
+
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-editor-senha");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+
+  const host = String(req.headers.host || "");
 
   if (req.method === "GET") {
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      if (!host.includes("natal-quilombo.vercel.app")) {
+        try {
+          const proxyRes = await fetch(CLOUD_FALLBACK_ORIGIN + "/api/config?t=" + Date.now(), {
+            cache: "no-store"
+          });
+          const data = await proxyRes.json();
+          res.status(proxyRes.status).json(data);
+          return;
+        } catch (_) {}
+      }
       res.status(200).json({ ok: true, config: null, blobConfigured: false });
       return;
     }
@@ -33,7 +55,25 @@ module.exports = async function handler(req, res) {
       res.status(401).json({ ok: false, error: "Senha inválida" });
       return;
     }
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+    const config = body.config || body;
+
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      if (!host.includes("natal-quilombo.vercel.app")) {
+        try {
+          const proxyRes = await fetch(CLOUD_FALLBACK_ORIGIN + "/api/config", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "x-editor-senha": req.headers["x-editor-senha"]
+            },
+            body: JSON.stringify({ config })
+          });
+          const data = await proxyRes.json();
+          res.status(proxyRes.status).json(data);
+          return;
+        } catch (_) {}
+      }
       res.status(503).json({
         ok: false,
         error: "Armazenamento Vercel Blob ainda não conectado ao projeto."
@@ -41,8 +81,6 @@ module.exports = async function handler(req, res) {
       return;
     }
     try {
-      const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
-      const config = body.config || body;
       const blob = await put("dados/config.json", JSON.stringify(config, null, 2), {
         access: "public",
         addRandomSuffix: false,

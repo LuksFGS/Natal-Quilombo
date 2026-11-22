@@ -867,21 +867,30 @@ function iniciarSite(midiasLocais) {
 }
 
 async function buscarConfigRemota() {
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(function () { ctrl.abort(); }, 3500);
-    const res = await fetch("/api/config?t=" + Date.now(), {
-      cache: "no-store",
-      signal: ctrl.signal
-    });
-    clearTimeout(timer);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.ok && data.config && typeof data.config === "object") {
-        return data.config;
+  const endpoints = ["/api/config?t=" + Date.now()];
+  if (!window.location.hostname.includes("natal-quilombo.vercel.app") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    endpoints.push("https://natal-quilombo.vercel.app/api/config?t=" + Date.now());
+  }
+  for (const url of endpoints) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(function () { ctrl.abort(); }, 3500);
+      const res = await fetch(url, {
+        cache: "no-store",
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.ok && data.config && typeof data.config === "object") {
+          return data.config;
+        }
+        if (data && data.blobConfigured === true) {
+          return null;
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
   return null;
 }
 
