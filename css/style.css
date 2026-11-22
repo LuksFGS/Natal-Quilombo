@@ -410,8 +410,7 @@ button {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(90deg, rgba(10, 34, 22, .96) 0%, rgba(10, 34, 22, .82) 45%, rgba(10, 34, 22, .3) 100%),
-    linear-gradient(0deg, rgba(10, 34, 22, .7) 0%, transparent 40%);
+    linear-gradient(180deg, rgba(10, 34, 22, .96) 0%, rgba(10, 34, 22, .82) 50%, rgba(10, 34, 22, .45) 100%);
 }
 
 .inicio__conteudo {
@@ -1519,7 +1518,7 @@ button {
 
   /* No celular a película escurece de baixo para cima */
   .inicio::before {
-    background: linear-gradient(0deg, rgba(10, 34, 22, .97) 0%, rgba(10, 34, 22, .85) 50%, rgba(10, 34, 22, .5) 100%);
+    background: linear-gradient(180deg, rgba(10, 34, 22, .97) 0%, rgba(10, 34, 22, .85) 50%, rgba(10, 34, 22, .5) 100%);
   }
 
   .inicio__botoes .botao {
