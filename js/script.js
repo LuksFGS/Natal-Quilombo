@@ -366,10 +366,13 @@ function iniciarSite(midiasLocais) {
         btn.dataset.video = urlVideo;
         btn.setAttribute("aria-label", item.legenda || "Reproduzir vídeo");
         const video = document.createElement("video");
-        video.dataset.src = urlVideo + "#t=0.5";
+        video.dataset.src = urlVideo.startsWith("blob:") ? urlVideo : (urlVideo + "#t=0.5");
         video.muted = true;
         video.playsInline = true;
         video.preload = "metadata";
+        video.addEventListener("loadeddata", function () {
+          try { if (video.currentTime === 0) video.currentTime = 0.5; } catch (_) {}
+        });
         btn.appendChild(video);
       } else if (item.src) {
         const img = document.createElement("img");
@@ -863,11 +866,45 @@ function iniciarSite(midiasLocais) {
   });
 }
 
-if (temAlteracoesLocais) {
-  carregarMidiasSalvas().then(function (midiasLocais) {
-    limparMidiasOrfas(cfg, midiasLocais, CONFIG);
-    iniciarSite(midiasLocais);
-  });
-} else {
-  iniciarSite(new Map());
+async function buscarConfigRemota() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () { ctrl.abort(); }, 3500);
+    const res = await fetch("/api/config?t=" + Date.now(), {
+      cache: "no-store",
+      signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.ok && data.config && typeof data.config === "object") {
+        return data.config;
+      }
+    }
+  } catch (_) {}
+  return null;
 }
+
+function aplicarMergeConfig(parsed) {
+  if (!parsed || typeof parsed !== "object") return;
+  cfg = Object.assign({}, CONFIG, parsed);
+  cfg.pix = Object.assign({}, CONFIG.pix, parsed.pix || {});
+  cfg.numeros = Object.assign({}, CONFIG.numeros, parsed.numeros || {});
+  cfg.redes = Object.assign({}, CONFIG.redes, parsed.redes || {});
+  cfg.textos = Object.assign({}, CONFIG.textos, parsed.textos || {});
+  cfg.galeria = Object.assign({}, CONFIG.galeria, parsed.galeria || {});
+}
+
+Promise.all([
+  buscarConfigRemota(),
+  temAlteracoesLocais ? carregarMidiasSalvas() : Promise.resolve(new Map())
+]).then(function (resultados) {
+  const configRemota = resultados[0];
+  const midiasLocais = resultados[1];
+  if (configRemota && !emModoRascunho) {
+    aplicarMergeConfig(configRemota);
+    try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(cfg)); } catch (_) {}
+  }
+  limparMidiasOrfas(cfg, midiasLocais, CONFIG);
+  iniciarSite(midiasLocais);
+});

@@ -1,20 +1,35 @@
 /* =====================================================================
    EDITOR VISUAL DO SITE — editor.js
-   Permite editar textos, links, Pix, fotos e vídeos sem tocar em código.
+   Permite editar textos, links, Pix, fotos e vídeos sem tocar em código,
+   salvando tanto no servidor/nuvem (para todos os aparelhos) quanto local.
    ===================================================================== */
 
 (function () {
   const SENHA_EDITOR = "0000";
   const CHAVE_SESSAO_EDITOR = "natalQuilomboEditorAutenticado";
   const CHAVE_RASCUNHO = "natalQuilomboRascunho";
+  const NOME_BANCO = "natalQuilomboMidiaDB";
+  const STORE_MIDIA = "arquivos";
+
   let pastaRaiz = null;
   let abaGaleriaAtual = "entrega";
   let editorInicializado = false;
-  const arquivosPendentes = new Map(); // "imagens/nome.jpg" -> File
+  const arquivosPendentes = new Map(); // "imagens/nome.jpg" -> Blob
   const previewsLocais = new Map();    // "imagens/nome.jpg" -> blob URL
 
   function clonar(obj) {
     return JSON.parse(JSON.stringify(obj));
+  }
+
+  function mesclarConfig(base, novo) {
+    if (!novo || typeof novo !== "object") return clonar(base);
+    const merged = Object.assign({}, clonar(base), clonar(novo));
+    merged.pix = Object.assign({}, base.pix, novo.pix || {});
+    merged.numeros = Object.assign({}, base.numeros, novo.numeros || {});
+    merged.redes = Object.assign({}, base.redes, novo.redes || {});
+    merged.textos = Object.assign({}, base.textos, novo.textos || {});
+    merged.galeria = Object.assign({}, base.galeria, novo.galeria || {});
+    return merged;
   }
 
   function carregarEstadoInicial() {
@@ -22,16 +37,7 @@
     try {
       const salvo = localStorage.getItem(CHAVE_RASCUNHO);
       if (salvo) {
-        const parsed = JSON.parse(salvo);
-        if (parsed && typeof parsed === "object") {
-          const merged = Object.assign({}, base, parsed);
-          merged.pix = Object.assign({}, base.pix, parsed.pix || {});
-          merged.numeros = Object.assign({}, base.numeros, parsed.numeros || {});
-          merged.redes = Object.assign({}, base.redes, parsed.redes || {});
-          merged.textos = Object.assign({}, base.textos, parsed.textos || {});
-          merged.galeria = Object.assign({}, base.galeria, parsed.galeria || {});
-          return merged;
-        }
+        return mesclarConfig(base, JSON.parse(salvo));
       }
     } catch (_) {}
     return base;
@@ -44,13 +50,13 @@
      ------------------------------------------------------------------- */
   const toastEl = document.getElementById("toast");
   let timerToast;
-  function avisar(msg) {
+  function avisar(msg, duracaoMs) {
     toastEl.textContent = msg;
     toastEl.classList.add("toast--visivel");
     clearTimeout(timerToast);
     timerToast = setTimeout(function () {
       toastEl.classList.remove("toast--visivel");
-    }, 3400);
+    }, duracaoMs || 3400);
   }
 
   function limparNomeArquivo(nome) {
@@ -89,12 +95,8 @@
   }
 
   /* -------------------------------------------------------------------
-     BANCO DE MÍDIA NO NAVEGADOR (IndexedDB) + OTIMIZAÇÃO DE IMAGEM
-     Guarda fotos e vídeos enviados para funcionarem no site na hora.
+     BANCO DE MÍDIA NO NAVEGADOR (IndexedDB) + OTIMIZAÇÃO
      ------------------------------------------------------------------- */
-  const NOME_BANCO = "natalQuilomboMidiaDB";
-  const STORE_MIDIA = "arquivos";
-
   function abrirBancoMidia() {
     return new Promise(function (resolve, reject) {
       if (!window.indexedDB) return reject(new Error("IndexedDB indisponível"));
@@ -125,6 +127,19 @@
     }
   }
 
+  async function removerMidiaDoBanco(caminho) {
+    try {
+      const db = await abrirBancoMidia();
+      await new Promise(function (resolve) {
+        const tx = db.transaction(STORE_MIDIA, "readwrite");
+        tx.objectStore(STORE_MIDIA).delete(caminho);
+        tx.oncomplete = resolve;
+        tx.onerror = resolve;
+      });
+      db.close();
+    } catch (_) {}
+  }
+
   async function carregarMidiasDoBanco() {
     try {
       const db = await abrirBancoMidia();
@@ -136,8 +151,14 @@
           const cursor = ev.target.result;
           if (cursor) {
             const caminho = cursor.key;
-            const blob = cursor.value;
-            if (blob instanceof Blob) {
+            const valor = cursor.value;
+            let blob = null;
+            if (valor instanceof Blob) {
+              blob = valor;
+            } else if (valor && valor.buffer instanceof ArrayBuffer) {
+              blob = new Blob([valor.buffer], { type: valor.type || "application/octet-stream" });
+            }
+            if (blob) {
               arquivosPendentes.set(caminho, blob);
               if (!previewsLocais.has(caminho)) {
                 previewsLocais.set(caminho, URL.createObjectURL(blob));
@@ -206,14 +227,114 @@
     });
   }
 
+  async function lerArquivoParaBlobMemoria(file, tipoPadrao) {
+    const buffer = await file.arrayBuffer();
+    return new Blob([buffer], { type: file.type || tipoPadrao });
+  }
+
+  /* -------------------------------------------------------------------
+     ENVIO DE ARQUIVO PARA NUVEM (Vercel Blob) OU SERVIDOR LOCAL
+     ------------------------------------------------------------------- */
+  async function enviarArquivoParaServidorOuNuvem(caminhoDestino, blob) {
+    // 1. Tenta obter token de upload direto para Vercel Blob (/api/upload POST)
+    try {
+      const tokenRes = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-editor-senha": SENHA_EDITOR
+        },
+        body: JSON.stringify({ pathname: caminhoDestino })
+      });
+
+      if (tokenRes.ok) {
+        const tokenData = await tokenRes.json();
+        if (tokenData && tokenData.clientToken) {
+          const partesToken = tokenData.clientToken.split("_");
+          const storeId = partesToken[3] || "";
+          const reqId = storeId + ":" + Date.now() + ":" + Math.random().toString(16).slice(2);
+          const putRes = await fetch(
+            "https://vercel.com/api/blob/?pathname=" + encodeURIComponent(caminhoDestino),
+            {
+              method: "PUT",
+              headers: {
+                "authorization": "Bearer " + tokenData.clientToken,
+                "x-api-version": "13",
+                "x-api-blob-request-id": reqId,
+                "x-api-blob-request-attempt": "0",
+                "x-vercel-blob-store-id": storeId,
+                "x-vercel-blob-access": "public",
+                "x-content-type": blob.type || "application/octet-stream",
+                "x-content-length": String(blob.size)
+              },
+              body: blob
+            }
+          );
+          if (putRes.ok) {
+            const blobInfo = await putRes.json();
+            if (blobInfo && blobInfo.url) {
+              return blobInfo.url;
+            }
+          }
+        } else if (tokenData && tokenData.localUpload) {
+          // Servidor local (localhost): envia via PUT /api/upload?pathname=...
+          const localPut = await fetch(
+            "/api/upload?pathname=" + encodeURIComponent(caminhoDestino),
+            {
+              method: "PUT",
+              headers: {
+                "content-type": blob.type || "application/octet-stream",
+                "x-editor-senha": SENHA_EDITOR
+              },
+              body: blob
+            }
+          );
+          if (localPut.ok) {
+            const localInfo = await localPut.json();
+            if (localInfo && localInfo.url) return localInfo.url;
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function substituirCaminhoNoEstado(caminhoAntigo, urlNova) {
+    if (!caminhoAntigo || !urlNova || caminhoAntigo === urlNova) return;
+    if (estado.capa === caminhoAntigo) {
+      estado.capa = urlNova;
+      const inpCapa = document.getElementById("cfg-capa");
+      if (inpCapa) inpCapa.value = urlNova;
+    }
+    if (estado.pix && estado.pix.imagemQrCode === caminhoAntigo) {
+      estado.pix.imagemQrCode = urlNova;
+    }
+    (estado.carrossel || []).forEach(function (item) {
+      if (item && item.src === caminhoAntigo) item.src = urlNova;
+    });
+    if (estado.galeria) {
+      ["entrega", "montagem", "videos"].forEach(function (aba) {
+        (estado.galeria[aba] || []).forEach(function (item) {
+          if (item && item.src === caminhoAntigo) item.src = urlNova;
+        });
+      });
+    }
+  }
+
   async function registrarArquivoLocal(file, pasta) {
     let nomeLimpo = limparNomeArquivo(file.name);
-    let blobFinal = file;
+    let blobFinal;
     if (pasta === "imagens" && file.type && file.type.startsWith("image/")) {
       blobFinal = await otimizarImagem(file);
       nomeLimpo = nomeLimpo.replace(/\.(png|webp|heic|jpeg)$/i, ".jpg");
       if (!/\.(jpg|jpeg|png|webp|gif)$/i.test(nomeLimpo)) nomeLimpo += ".jpg";
+    } else {
+      blobFinal = await lerArquivoParaBlobMemoria(file, pasta === "videos" ? "video/mp4" : "application/octet-stream");
+      if (pasta === "videos" && !/\.(mp4|webm|mov|m4v)$/i.test(nomeLimpo)) {
+        nomeLimpo += ".mp4";
+      }
     }
+
     const destino = pasta + "/" + nomeLimpo;
     arquivosPendentes.set(destino, blobFinal);
     if (previewsLocais.has(destino)) {
@@ -348,7 +469,6 @@
     const card = document.createElement("div");
     card.className = "item-midia";
 
-    // Thumbnail
     const thumb = document.createElement("div");
     thumb.className = "item-midia__thumb";
     if (item.tipo === "youtube") {
@@ -359,10 +479,14 @@
       thumb.appendChild(img);
     } else if (item.tipo === "video") {
       const vid = document.createElement("video");
-      vid.dataset.src = srcParaPreview(item.src) + "#t=0.5";
+      const urlVid = srcParaPreview(item.src);
+      vid.dataset.src = urlVid.startsWith("blob:") ? urlVid : (urlVid + "#t=0.5");
       vid.muted = true;
       vid.playsInline = true;
       vid.preload = "metadata";
+      vid.addEventListener("loadeddata", function () {
+        try { if (vid.currentTime === 0) vid.currentTime = 0.5; } catch (_) {}
+      });
       thumb.appendChild(vid);
       observadorVideosEditor.observe(vid);
     } else {
@@ -372,7 +496,6 @@
       thumb.appendChild(img);
     }
 
-    // Informações + legenda editável
     const info = document.createElement("div");
     info.className = "item-midia__info";
 
@@ -397,7 +520,6 @@
     info.appendChild(meta);
     info.appendChild(inpLegenda);
 
-    // Controles de ordem / exclusão
     const controles = document.createElement("div");
     controles.className = "item-midia__controles";
 
@@ -479,23 +601,25 @@
 
   /* -------------------------------------------------------------------
      ADICIONAR FOTOS / VÍDEOS / YOUTUBE
+     Coloca itens novos no TOPO da lista (unshift) para aparecerem
+     imediatamente no site sem ficar escondidos atrás do "Ver mais".
      ------------------------------------------------------------------- */
-  function configurarAdicaoMidia(btnFoto, inputFoto, btnVideo, inputVideo, btnYt, obterLista, rerender) {
+  function configurarAdicaoMidia(btnFoto, inputFoto, btnVideo, inputVideo, btnYt, obterLista, rerender, ehGaleria) {
     document.getElementById(btnFoto).addEventListener("click", function () {
       document.getElementById(inputFoto).click();
     });
     document.getElementById(inputFoto).addEventListener("change", async function (ev) {
       const arquivos = Array.from(ev.target.files || []);
+      ev.target.value = "";
+      if (!arquivos.length) return;
+      avisar("Carregando foto...");
       for (const file of arquivos) {
         const destino = await registrarArquivoLocal(file, "imagens");
-        obterLista().push({ tipo: "foto", src: destino, legenda: "" });
+        obterLista().unshift({ tipo: "foto", src: destino, legenda: "" });
       }
-      ev.target.value = "";
       rerender();
-      if (arquivos.length) {
-        try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
-        avisar("Foto adicionada! Clique em 'Salvar' para aplicar.");
-      }
+      try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+      avisar("Foto adicionada no topo! Clique em 'Salvar' para publicar.");
     });
 
     document.getElementById(btnVideo).addEventListener("click", function () {
@@ -503,16 +627,21 @@
     });
     document.getElementById(inputVideo).addEventListener("change", async function (ev) {
       const arquivos = Array.from(ev.target.files || []);
+      ev.target.value = "";
+      if (!arquivos.length) return;
+      avisar("Carregando vídeo...");
       for (const file of arquivos) {
         const destino = await registrarArquivoLocal(file, "videos");
-        obterLista().push({ tipo: "video", src: destino, legenda: "" });
+        const novoItem = { tipo: "video", src: destino, legenda: "" };
+        obterLista().unshift(novoItem);
+        if (ehGaleria && abaGaleriaAtual !== "videos") {
+          estado.galeria.videos = estado.galeria.videos || [];
+          estado.galeria.videos.unshift({ tipo: "video", src: destino, legenda: "" });
+        }
       }
-      ev.target.value = "";
       rerender();
-      if (arquivos.length) {
-        try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
-        avisar("Vídeo adicionado! Clique em 'Salvar' para aplicar.");
-      }
+      try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+      avisar("Vídeo adicionado no topo! Clique em 'Salvar' para publicar.");
     });
 
     document.getElementById(btnYt).addEventListener("click", function () {
@@ -523,7 +652,11 @@
         avisar("Link do YouTube inválido. Tente copiar a URL completa do vídeo.");
         return;
       }
-      obterLista().push({ tipo: "youtube", id: ytId, legenda: "" });
+      obterLista().unshift({ tipo: "youtube", id: ytId, legenda: "" });
+      if (ehGaleria && abaGaleriaAtual !== "videos") {
+        estado.galeria.videos = estado.galeria.videos || [];
+        estado.galeria.videos.unshift({ tipo: "youtube", id: ytId, legenda: "" });
+      }
       rerender();
       try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
       avisar("Vídeo do YouTube adicionado!");
@@ -535,7 +668,8 @@
     "carrossel-add-video", "input-carrossel-video",
     "carrossel-add-yt",
     () => estado.carrossel,
-    renderCarrossel
+    renderCarrossel,
+    false
   );
 
   configurarAdicaoMidia(
@@ -543,7 +677,8 @@
     "galeria-add-video", "input-galeria-video",
     "galeria-add-yt",
     () => estado.galeria[abaGaleriaAtual],
-    renderGaleria
+    renderGaleria,
+    true
   );
 
   // Trocar foto da capa
@@ -552,14 +687,15 @@
   });
   document.getElementById("input-capa").addEventListener("change", async function (ev) {
     const file = ev.target.files && ev.target.files[0];
+    ev.target.value = "";
     if (!file) return;
+    avisar("Carregando nova capa...");
     const destino = await registrarArquivoLocal(file, "imagens");
     estado.capa = destino;
     document.getElementById("cfg-capa").value = destino;
     document.getElementById("preview-capa").src = srcParaPreview(destino);
-    ev.target.value = "";
     try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
-    avisar("Nova capa selecionada!");
+    avisar("Nova capa selecionada! Clique em 'Salvar' para publicar.");
   });
 
   /* -------------------------------------------------------------------
@@ -605,7 +741,7 @@
 
   document.getElementById("btn-conectar").addEventListener("click", async function () {
     if (!window.showDirectoryPicker) {
-      avisar("Seu navegador ou modo atual (arquivo local) não suporta salvar direto na pasta. Use 'Baixar config.js' ou abra pelo servidor/Chrome.");
+      avisar("Seu navegador não suporta conectar pasta local. Use o botão 'Salvar' no topo.");
       return;
     }
     try {
@@ -629,6 +765,7 @@
   });
 
   async function escreverArquivoNaPasta(raiz, caminhoRelativo, conteudo) {
+    if (/^https?:\/\//i.test(caminhoRelativo)) return;
     const partes = caminhoRelativo.split("/");
     let atual = raiz;
     for (let i = 0; i < partes.length - 1; i++) {
@@ -648,9 +785,8 @@
         await escreverArquivoNaPasta(pastaRaiz, destino, file);
       }
       await escreverArquivoNaPasta(pastaRaiz, "js/config.js", gerarTextoConfigJs());
-      arquivosPendentes.clear();
       localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
-      avisar("✓ Tudo salvo na pasta (config.js + fotos/vídeos novos)!");
+      avisar("Alterações Salvas!");
       return true;
     } catch (err) {
       avisar("Erro ao salvar na pasta: " + err.message);
@@ -661,18 +797,59 @@
   }
 
   async function salvarGeral() {
-    for (const [destino, file] of arquivosPendentes.entries()) {
-      await salvarMidiaNoBanco(destino, file);
-    }
-    if (pastaRaiz) {
-      await salvarNaPastaConectada();
-      return;
-    }
+    const botoesSalvar = [
+      document.getElementById("btn-salvar-topo"),
+      document.getElementById("btn-salvar-publicar")
+    ];
+    botoesSalvar.forEach(b => { if (b) b.disabled = true; });
+
     try {
+      // 1. Garante persistência no IndexedDB local
+      for (const [destino, blob] of arquivosPendentes.entries()) {
+        await salvarMidiaNoBanco(destino, blob);
+      }
+
+      // 2. Envia fotos e vídeos novos para o servidor/nuvem (Vercel Blob ou servidor local)
+      if (arquivosPendentes.size > 0) {
+        avisar("Enviando fotos/vídeos...", 15000);
+        for (const [destino, blob] of Array.from(arquivosPendentes.entries())) {
+          const urlRemota = await enviarArquivoParaServidorOuNuvem(destino, blob);
+          if (urlRemota) {
+            substituirCaminhoNoEstado(destino, urlRemota);
+            if (urlRemota !== destino) {
+              arquivosPendentes.delete(destino);
+              await removerMidiaDoBanco(destino);
+            }
+          }
+        }
+        renderCarrossel();
+        renderGaleria();
+      }
+
+      // 3. Salva configuração global no servidor/nuvem (/api/config) para todos os aparelhos
+      try {
+        await fetch("/api/config", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-editor-senha": SENHA_EDITOR
+          },
+          body: JSON.stringify({ config: estado })
+        });
+      } catch (_) {}
+
+      // 4. Se pasta local estiver conectada, grava também na pasta
+      if (pastaRaiz) {
+        await salvarNaPastaConectada();
+      }
+
+      // 5. Atualiza cache local
       localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
       avisar("Alterações Salvas!");
     } catch (_) {
-      avisar("Não foi possível salvar no navegador.");
+      avisar("Não foi possível salvar.");
+    } finally {
+      botoesSalvar.forEach(b => { if (b) b.disabled = false; });
     }
   }
 
@@ -693,29 +870,15 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    localStorage.removeItem(CHAVE_RASCUNHO);
-
-    if (arquivosPendentes.size > 0) {
-      const nomes = Array.from(arquivosPendentes.keys()).join(", ");
-      avisar("config.js baixado! Copie para js/config.js e coloque os arquivos novos em: " + nomes);
-    } else {
-      avisar("✓ config.js baixado! Substitua o arquivo js/config.js na pasta do site.");
-    }
+    avisar("✓ config.js baixado!");
   });
 
   /* -------------------------------------------------------------------
-     TESTAR NO SITE (rascunho no navegador)
+     TESTAR NO SITE
      ------------------------------------------------------------------- */
-  function testarNoSite() {
-    try {
-      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
-      if (arquivosPendentes.size > 0 && !pastaRaiz) {
-        avisar("Abrindo prévia! Arquivos novos do PC só aparecem após salvar na pasta.");
-      }
-      window.open("index.html?rascunho=1", "_blank", "noopener");
-    } catch (err) {
-      avisar("Não foi possível salvar o rascunho no navegador.");
-    }
+  async function testarNoSite() {
+    await salvarGeral();
+    window.open("index.html?rascunho=1", "_blank", "noopener");
   }
 
   document.getElementById("btn-testar").addEventListener("click", testarNoSite);
@@ -728,11 +891,21 @@
     previewsLocais.clear();
     await limparBancoMidia();
     estado = clonar(CONFIG);
+    try {
+      await fetch("/api/config", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-editor-senha": SENHA_EDITOR
+        },
+        body: JSON.stringify({ config: estado })
+      });
+    } catch (_) {}
     inicializarCampos();
     renderValores();
     renderCarrossel();
     renderGaleria();
-    avisar("Rascunho descartado. Dados recarregados do js/config.js atual.");
+    avisar("Restaurado para o original!");
   });
 
   /* -------------------------------------------------------------------
@@ -787,12 +960,25 @@
     }
   }
 
+  async function sincronizarEstadoRemoto() {
+    try {
+      const res = await fetch("/api/config?t=" + Date.now(), { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.ok && data.config) {
+          estado = mesclarConfig(CONFIG, data.config);
+          try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
   async function desbloquearEditor() {
     telaSenha.hidden = true;
     conteudoEditor.hidden = false;
     if (!editorInicializado) {
       editorInicializado = true;
-      await carregarMidiasDoBanco();
+      await Promise.all([carregarMidiasDoBanco(), sincronizarEstadoRemoto()]);
       limparMidiasOrfasEditor();
       inicializarCampos();
       renderValores();
