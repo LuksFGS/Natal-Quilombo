@@ -8,12 +8,13 @@
   const SENHA_EDITOR = "7002";
   const CHAVE_SESSAO_EDITOR = "natalQuilomboEditorAutenticado_7002";
   const CHAVE_RASCUNHO = "natalQuilomboRascunho";
-  const NOME_BANCO = "natalQuilomboMidiaDB_v2";
+  const NOME_BANCO = "natalQuilomboMidiaDB_v3";
   const STORE_MIDIA = "arquivos";
 
   try {
     if (window.indexedDB) {
       window.indexedDB.deleteDatabase("natalQuilomboMidiaDB");
+      window.indexedDB.deleteDatabase("natalQuilomboMidiaDB_v2");
     }
   } catch (_) {}
 
@@ -147,38 +148,8 @@
   }
 
   async function carregarMidiasDoBanco() {
-    try {
-      const db = await abrirBancoMidia();
-      await new Promise(function (resolve) {
-        const tx = db.transaction(STORE_MIDIA, "readonly");
-        const store = tx.objectStore(STORE_MIDIA);
-        const reqCursor = store.openCursor();
-        reqCursor.onsuccess = function (ev) {
-          const cursor = ev.target.result;
-          if (cursor) {
-            const caminho = cursor.key;
-            const valor = cursor.value;
-            let blob = null;
-            if (valor instanceof Blob) {
-              blob = valor;
-            } else if (valor && valor.buffer instanceof ArrayBuffer) {
-              blob = new Blob([valor.buffer], { type: valor.type || "application/octet-stream" });
-            }
-            if (blob) {
-              arquivosPendentes.set(caminho, blob);
-              if (!previewsLocais.has(caminho)) {
-                previewsLocais.set(caminho, URL.createObjectURL(blob));
-              }
-            }
-            cursor.continue();
-          } else {
-            resolve();
-          }
-        };
-        reqCursor.onerror = function () { resolve(); };
-      });
-      db.close();
-    } catch (_) {}
+    // Limpa eventuais resíduos de sessões anteriores para não reenviar arquivos antigos ao salvar textos
+    await limparBancoMidia();
   }
 
   async function limparBancoMidia() {
@@ -1042,31 +1013,29 @@
       // 0. Remove da fila qualquer arquivo antigo que não esteja mais no estado atual
       await limparArquivosPendentesNaoUsados();
 
-      // 1. Salva textos e links imediatamente na nuvem e no cache local
-      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
-      await salvarConfigNaNuvem(estado);
-
-      // 2. Se houver foto ou vídeo novo adicionado agora, envia para a nuvem
+      // 1. Se houver foto ou vídeo novo adicionado agora, envia para a nuvem com barra de progresso
       if (arquivosPendentes.size > 0) {
         for (const [destino, blob] of Array.from(arquivosPendentes.entries())) {
-          await salvarMidiaNoBanco(destino, blob);
           const urlRemota = await enviarArquivoParaServidorOuNuvem(destino, blob);
+          arquivosPendentes.delete(destino);
+          await removerMidiaDoBanco(destino);
           if (uploadCanceladoPeloUsuario) {
             return;
           }
           if (urlRemota) {
             substituirCaminhoNoEstado(destino, urlRemota);
-            if (urlRemota !== destino) {
-              arquivosPendentes.delete(destino);
-              await removerMidiaDoBanco(destino);
-            }
           }
         }
         renderCarrossel();
         renderGaleria();
-        localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
-        await salvarConfigNaNuvem(estado);
+      } else {
+        // Quando está salvando textos/links (sem subir foto ou vídeo), exibe "Enviando para a nuvem..."
+        avisar("☁️ Enviando para a nuvem...", 10000);
       }
+
+      // 2. Salva configuração global na nuvem (/api/config) e no cache local
+      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
+      await salvarConfigNaNuvem(estado);
 
       // 3. Se pasta local estiver conectada, grava também na pasta
       if (pastaRaiz) {
