@@ -1,4 +1,4 @@
-const { put, list } = require("@vercel/blob");
+const { put, list, del } = require("@vercel/blob");
 
 const CLOUD_FALLBACK_ORIGIN = "https://natal-quilombo.vercel.app";
 
@@ -31,12 +31,13 @@ module.exports = async function handler(req, res) {
       return;
     }
     try {
-      const { blobs } = await list({ prefix: "dados/config.json", limit: 5 });
-      const match = blobs.find(b => b.pathname === "dados/config.json") || blobs[0];
-      if (!match) {
+      const { blobs } = await list({ prefix: "dados/config", limit: 30 });
+      if (!blobs || blobs.length === 0) {
         res.status(200).json({ ok: true, config: null, blobConfigured: true });
         return;
       }
+      blobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+      const match = blobs[0];
       const resp = await fetch(match.url + "?t=" + Date.now(), { cache: "no-store" });
       if (!resp.ok) {
         res.status(200).json({ ok: true, config: null, blobConfigured: true });
@@ -81,13 +82,21 @@ module.exports = async function handler(req, res) {
       return;
     }
     try {
-      const blob = await put("dados/config.json", JSON.stringify(config, null, 2), {
+      const { blobs: anteriores } = await list({ prefix: "dados/config", limit: 30 });
+      const blob = await put("dados/config-" + Date.now() + ".json", JSON.stringify(config, null, 2), {
         access: "public",
-        addRandomSuffix: false,
-        allowOverwrite: true,
+        addRandomSuffix: true,
         contentType: "application/json",
         cacheControlMaxAge: 0
       });
+      const urlsAntigas = (anteriores || [])
+        .map(b => b.url)
+        .filter(u => u && u !== blob.url);
+      if (urlsAntigas.length > 0) {
+        try {
+          await del(urlsAntigas);
+        } catch (_) {}
+      }
       res.status(200).json({ ok: true, url: blob.url });
     } catch (err) {
       res.status(500).json({ ok: false, error: err.message });
@@ -95,5 +104,5 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  res.status(405).json({ ok: false, error: "Method not allowed" });
+  res.status(405).json({ ok: false, error: err.message || "Method not allowed" });
 };

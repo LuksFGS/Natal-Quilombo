@@ -569,6 +569,7 @@
       const tmp = lista[idx - 1];
       lista[idx - 1] = lista[idx];
       lista[idx] = tmp;
+      try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
       opcoes.rerender();
     });
 
@@ -581,6 +582,7 @@
       const tmp = lista[idx + 1];
       lista[idx + 1] = lista[idx];
       lista[idx] = tmp;
+      try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
       opcoes.rerender();
     });
 
@@ -588,9 +590,30 @@
     btnExcluir.type = "button";
     btnExcluir.className = "btn btn--perigo btn--pequeno";
     btnExcluir.textContent = "🗑️ Excluir";
-    btnExcluir.addEventListener("click", function () {
-      lista.splice(idx, 1);
+    btnExcluir.addEventListener("click", async function () {
+      const removidos = lista.splice(idx, 1);
+      const removido = removidos && removidos[0];
+      if (removido && removido.src) {
+        const aindaUsado =
+          estado.capa === removido.src ||
+          (estado.pix && estado.pix.imagemQrCode === removido.src) ||
+          (estado.carrossel || []).some(i => i && i.src === removido.src) ||
+          ["entrega", "montagem", "videos"].some(aba =>
+            (estado.galeria && estado.galeria[aba] || []).some(i => i && i.src === removido.src)
+          );
+        if (!aindaUsado) {
+          arquivosPendentes.delete(removido.src);
+          if (previewsLocais.has(removido.src)) {
+            URL.revokeObjectURL(previewsLocais.get(removido.src));
+            previewsLocais.delete(removido.src);
+          }
+          await removerMidiaDoBanco(removido.src);
+        }
+      }
+      try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
       opcoes.rerender();
+      avisar("Item excluído!");
+      await salvarConfigNaNuvem(estado);
     });
 
     controles.appendChild(btnCima);
