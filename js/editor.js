@@ -88,14 +88,139 @@
     return previewsLocais.get(caminho) || caminho;
   }
 
-  function registrarArquivoLocal(file, pasta) {
-    const nomeLimpo = limparNomeArquivo(file.name);
+  /* -------------------------------------------------------------------
+     BANCO DE MÍDIA NO NAVEGADOR (IndexedDB) + OTIMIZAÇÃO DE IMAGEM
+     Guarda fotos e vídeos enviados para funcionarem no site na hora.
+     ------------------------------------------------------------------- */
+  const NOME_BANCO = "natalQuilomboMidiaDB";
+  const STORE_MIDIA = "arquivos";
+
+  function abrirBancoMidia() {
+    return new Promise(function (resolve, reject) {
+      if (!window.indexedDB) return reject(new Error("IndexedDB indisponível"));
+      const req = indexedDB.open(NOME_BANCO, 1);
+      req.onupgradeneeded = function (ev) {
+        const db = ev.target.result;
+        if (!db.objectStoreNames.contains(STORE_MIDIA)) {
+          db.createObjectStore(STORE_MIDIA);
+        }
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+
+  async function salvarMidiaNoBanco(caminho, blob) {
+    try {
+      const db = await abrirBancoMidia();
+      await new Promise(function (resolve, reject) {
+        const tx = db.transaction(STORE_MIDIA, "readwrite");
+        tx.objectStore(STORE_MIDIA).put(blob, caminho);
+        tx.oncomplete = resolve;
+        tx.onerror = function () { reject(tx.error); };
+      });
+      db.close();
+    } catch (err) {
+      console.warn("Não foi possível salvar mídia no IndexedDB:", err);
+    }
+  }
+
+  async function carregarMidiasDoBanco() {
+    try {
+      const db = await abrirBancoMidia();
+      await new Promise(function (resolve) {
+        const tx = db.transaction(STORE_MIDIA, "readonly");
+        const store = tx.objectStore(STORE_MIDIA);
+        const reqCursor = store.openCursor();
+        reqCursor.onsuccess = function (ev) {
+          const cursor = ev.target.result;
+          if (cursor) {
+            const caminho = cursor.key;
+            const blob = cursor.value;
+            if (blob instanceof Blob) {
+              arquivosPendentes.set(caminho, blob);
+              if (!previewsLocais.has(caminho)) {
+                previewsLocais.set(caminho, URL.createObjectURL(blob));
+              }
+            }
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        reqCursor.onerror = function () { resolve(); };
+      });
+      db.close();
+    } catch (_) {}
+  }
+
+  async function limparBancoMidia() {
+    try {
+      const db = await abrirBancoMidia();
+      await new Promise(function (resolve) {
+        const tx = db.transaction(STORE_MIDIA, "readwrite");
+        tx.objectStore(STORE_MIDIA).clear();
+        tx.oncomplete = resolve;
+        tx.onerror = resolve;
+      });
+      db.close();
+    } catch (_) {}
+  }
+
+  function otimizarImagem(file) {
+    return new Promise(function (resolve) {
+      if (!file || !file.type || !file.type.startsWith("image/")) {
+        return resolve(file);
+      }
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        const maxDim = 1600;
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) return resolve(file);
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function (blob) {
+          resolve(blob || file);
+        }, "image/jpeg", 0.85);
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        resolve(file);
+      };
+      img.src = url;
+    });
+  }
+
+  async function registrarArquivoLocal(file, pasta) {
+    let nomeLimpo = limparNomeArquivo(file.name);
+    let blobFinal = file;
+    if (pasta === "imagens" && file.type && file.type.startsWith("image/")) {
+      blobFinal = await otimizarImagem(file);
+      nomeLimpo = nomeLimpo.replace(/\.(png|webp|heic|jpeg)$/i, ".jpg");
+      if (!/\.(jpg|jpeg|png|webp|gif)$/i.test(nomeLimpo)) nomeLimpo += ".jpg";
+    }
     const destino = pasta + "/" + nomeLimpo;
-    arquivosPendentes.set(destino, file);
+    arquivosPendentes.set(destino, blobFinal);
     if (previewsLocais.has(destino)) {
       URL.revokeObjectURL(previewsLocais.get(destino));
     }
-    previewsLocais.set(destino, URL.createObjectURL(file));
+    previewsLocais.set(destino, URL.createObjectURL(blobFinal));
+    await salvarMidiaNoBanco(destino, blobFinal);
     return destino;
   }
 
@@ -359,36 +484,34 @@
     document.getElementById(btnFoto).addEventListener("click", function () {
       document.getElementById(inputFoto).click();
     });
-    document.getElementById(inputFoto).addEventListener("change", function (ev) {
+    document.getElementById(inputFoto).addEventListener("change", async function (ev) {
       const arquivos = Array.from(ev.target.files || []);
-      arquivos.forEach(function (file) {
-        const destino = registrarArquivoLocal(file, "imagens");
+      for (const file of arquivos) {
+        const destino = await registrarArquivoLocal(file, "imagens");
         obterLista().push({ tipo: "foto", src: destino, legenda: "" });
-      });
+      }
       ev.target.value = "";
       rerender();
       if (arquivos.length) {
-        avisar(pastaRaiz
-          ? "Foto adicionada! Clique em 'Salvar na pasta' para gravar."
-          : "Foto adicionada! Conecte a pasta (ou copie para imagens/) e salve.");
+        try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+        avisar("Foto adicionada! Clique em 'Salvar' para aplicar.");
       }
     });
 
     document.getElementById(btnVideo).addEventListener("click", function () {
       document.getElementById(inputVideo).click();
     });
-    document.getElementById(inputVideo).addEventListener("change", function (ev) {
+    document.getElementById(inputVideo).addEventListener("change", async function (ev) {
       const arquivos = Array.from(ev.target.files || []);
-      arquivos.forEach(function (file) {
-        const destino = registrarArquivoLocal(file, "videos");
+      for (const file of arquivos) {
+        const destino = await registrarArquivoLocal(file, "videos");
         obterLista().push({ tipo: "video", src: destino, legenda: "" });
-      });
+      }
       ev.target.value = "";
       rerender();
       if (arquivos.length) {
-        avisar(pastaRaiz
-          ? "Vídeo adicionado! Clique em 'Salvar na pasta' para gravar."
-          : "Vídeo adicionado! Conecte a pasta (ou copie para videos/) e salve.");
+        try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+        avisar("Vídeo adicionado! Clique em 'Salvar' para aplicar.");
       }
     });
 
@@ -402,6 +525,7 @@
       }
       obterLista().push({ tipo: "youtube", id: ytId, legenda: "" });
       rerender();
+      try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
       avisar("Vídeo do YouTube adicionado!");
     });
   }
@@ -426,14 +550,15 @@
   document.getElementById("btn-trocar-capa").addEventListener("click", function () {
     document.getElementById("input-capa").click();
   });
-  document.getElementById("input-capa").addEventListener("change", function (ev) {
+  document.getElementById("input-capa").addEventListener("change", async function (ev) {
     const file = ev.target.files && ev.target.files[0];
     if (!file) return;
-    const destino = registrarArquivoLocal(file, "imagens");
+    const destino = await registrarArquivoLocal(file, "imagens");
     estado.capa = destino;
     document.getElementById("cfg-capa").value = destino;
     document.getElementById("preview-capa").src = srcParaPreview(destino);
     ev.target.value = "";
+    try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
     avisar("Nova capa selecionada!");
   });
 
@@ -536,6 +661,9 @@
   }
 
   async function salvarGeral() {
+    for (const [destino, file] of arquivosPendentes.entries()) {
+      await salvarMidiaNoBanco(destino, file);
+    }
     if (pastaRaiz) {
       await salvarNaPastaConectada();
       return;
@@ -593,9 +721,12 @@
   document.getElementById("btn-testar").addEventListener("click", testarNoSite);
   document.getElementById("btn-testar-publicar").addEventListener("click", testarNoSite);
 
-  document.getElementById("btn-limpar-rascunho").addEventListener("click", function () {
+  document.getElementById("btn-limpar-rascunho").addEventListener("click", async function () {
     localStorage.removeItem(CHAVE_RASCUNHO);
     arquivosPendentes.clear();
+    previewsLocais.forEach(function (url) { URL.revokeObjectURL(url); });
+    previewsLocais.clear();
+    await limparBancoMidia();
     estado = clonar(CONFIG);
     inicializarCampos();
     renderValores();
@@ -613,11 +744,56 @@
   const inputSenha = document.getElementById("input-senha");
   const erroSenha = document.getElementById("erro-senha");
 
-  function desbloquearEditor() {
+  function obterArquivosOriginais() {
+    const orig = new Set();
+    if (CONFIG.capa) orig.add(CONFIG.capa);
+    if (CONFIG.pix && CONFIG.pix.imagemQrCode) orig.add(CONFIG.pix.imagemQrCode);
+    (CONFIG.carrossel || []).forEach(i => { if (i && i.src) orig.add(i.src); });
+    if (CONFIG.galeria) {
+      ["entrega", "montagem", "videos"].forEach(aba => {
+        (CONFIG.galeria[aba] || []).forEach(i => { if (i && i.src) orig.add(i.src); });
+      });
+    }
+    return orig;
+  }
+
+  function limparMidiasOrfasEditor() {
+    const orig = obterArquivosOriginais();
+    let mudou = false;
+    function valido(src) {
+      if (!src) return false;
+      if (/^(https?:|data:|blob:)/i.test(src)) return true;
+      return orig.has(src) || previewsLocais.has(src);
+    }
+    if (estado.capa && !valido(estado.capa)) {
+      estado.capa = CONFIG.capa;
+      mudou = true;
+    }
+    if (Array.isArray(estado.carrossel)) {
+      const antes = estado.carrossel.length;
+      estado.carrossel = estado.carrossel.filter(i => i && (i.tipo === "youtube" || valido(i.src)));
+      if (estado.carrossel.length !== antes) mudou = true;
+    }
+    if (estado.galeria) {
+      ["entrega", "montagem", "videos"].forEach(aba => {
+        if (!Array.isArray(estado.galeria[aba])) return;
+        const antes = estado.galeria[aba].length;
+        estado.galeria[aba] = estado.galeria[aba].filter(i => i && (i.tipo === "youtube" || valido(i.src)));
+        if (estado.galeria[aba].length !== antes) mudou = true;
+      });
+    }
+    if (mudou) {
+      try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+    }
+  }
+
+  async function desbloquearEditor() {
     telaSenha.hidden = true;
     conteudoEditor.hidden = false;
     if (!editorInicializado) {
       editorInicializado = true;
+      await carregarMidiasDoBanco();
+      limparMidiasOrfasEditor();
       inicializarCampos();
       renderValores();
       renderCarrossel();
