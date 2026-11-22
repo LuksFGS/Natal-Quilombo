@@ -233,6 +233,91 @@
   }
 
   /* -------------------------------------------------------------------
+     BARRA DE PROGRESSO DE UPLOAD (% / MB / TEMPO ESTIMADO)
+     ------------------------------------------------------------------- */
+  const painelUploadEl = document.getElementById("upload-progresso");
+  const uploadNomeEl = document.getElementById("upload-nome");
+  const uploadPctEl = document.getElementById("upload-pct");
+  const uploadBarraEl = document.getElementById("upload-barra");
+  const uploadMbEl = document.getElementById("upload-mb");
+  const uploadTempoEl = document.getElementById("upload-tempo");
+
+  function formatarMB(bytes) {
+    return (bytes / (1024 * 1024)).toFixed(1).replace(".", ",") + " MB";
+  }
+
+  function formatarTempoRestante(segundos) {
+    if (!Number.isFinite(segundos) || segundos <= 0) return "Concluindo...";
+    const s = Math.ceil(segundos);
+    if (s < 60) return "Falta ~" + s + "s";
+    const min = Math.floor(s / 60);
+    const resto = s % 60;
+    return "Falta ~" + min + "m " + (resto > 0 ? resto + "s" : "");
+  }
+
+  function mostrarProgressoUpload(nomeArquivo, enviados, total, inicioMs) {
+    if (!painelUploadEl) return;
+    painelUploadEl.hidden = false;
+    const nomeCurto = (nomeArquivo || "arquivo").split("/").pop();
+    const pct = total > 0 ? Math.min(100, Math.round((enviados / total) * 100)) : 0;
+    if (uploadNomeEl) uploadNomeEl.textContent = "☁️ Enviando: " + nomeCurto;
+    if (uploadPctEl) uploadPctEl.textContent = pct + "%";
+    if (uploadBarraEl) uploadBarraEl.style.width = pct + "%";
+    if (uploadMbEl) uploadMbEl.textContent = formatarMB(enviados) + " de " + formatarMB(total);
+
+    const decorridoSeg = Math.max(0.2, (Date.now() - inicioMs) / 1000);
+    const bytesPorSeg = enviados / decorridoSeg;
+    if (uploadTempoEl) {
+      if (pct >= 100) {
+        uploadTempoEl.textContent = "Finalizando publicação...";
+      } else if (enviados < 64 * 1024 || decorridoSeg < 0.6) {
+        uploadTempoEl.textContent = "Calculando tempo...";
+      } else {
+        const velMb = (bytesPorSeg / (1024 * 1024)).toFixed(1).replace(".", ",");
+        const restanteSeg = (total - enviados) / Math.max(1, bytesPorSeg);
+        uploadTempoEl.textContent = velMb + " MB/s • " + formatarTempoRestante(restanteSeg);
+      }
+    }
+  }
+
+  function ocultarProgressoUpload() {
+    if (painelUploadEl) painelUploadEl.hidden = true;
+  }
+
+  function xhrEnviarComProgresso(url, metodo, headers, corpoBlob, aoProgresso) {
+    return new Promise(function (resolve, reject) {
+      const xhr = new XMLHttpRequest();
+      xhr.open(metodo, url, true);
+      Object.keys(headers || {}).forEach(function (k) {
+        if (headers[k] !== undefined && headers[k] !== null) {
+          xhr.setRequestHeader(k, headers[k]);
+        }
+      });
+      if (xhr.upload && typeof aoProgresso === "function") {
+        xhr.upload.onprogress = function (ev) {
+          if (ev.lengthComputable) {
+            aoProgresso(ev.loaded, ev.total);
+          }
+        };
+      }
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText || "{}"));
+          } catch (_) {
+            resolve({});
+          }
+        } else {
+          reject(new Error("HTTP " + xhr.status));
+        }
+      };
+      xhr.onerror = function () { reject(new Error("Falha de rede no upload")); };
+      xhr.ontimeout = function () { reject(new Error("Tempo esgotado no upload")); };
+      xhr.send(corpoBlob);
+    });
+  }
+
+  /* -------------------------------------------------------------------
      ENVIO DE ARQUIVO PARA NUVEM (Vercel Blob) OU SERVIDOR LOCAL
      ------------------------------------------------------------------- */
   const API_NUVEM_PADRAO = "https://natal-quilombo.vercel.app";
@@ -260,7 +345,32 @@
     return null;
   }
 
+  function sanitizarEstadoParaNuvem(cfgBruto) {
+    const copia = clonar(cfgBruto);
+    const orig = obterArquivosOriginais();
+    function ehValidoNaNuvem(src) {
+      if (!src) return false;
+      if (/^https?:\/\//i.test(src)) return true;
+      return orig.has(src);
+    }
+    if (copia.capa && !ehValidoNaNuvem(copia.capa)) {
+      copia.capa = CONFIG.capa;
+    }
+    if (Array.isArray(copia.carrossel)) {
+      copia.carrossel = copia.carrossel.filter(i => i && (i.tipo === "youtube" || ehValidoNaNuvem(i.src)));
+    }
+    if (copia.galeria) {
+      ["entrega", "montagem", "videos"].forEach(aba => {
+        if (Array.isArray(copia.galeria[aba])) {
+          copia.galeria[aba] = copia.galeria[aba].filter(i => i && (i.tipo === "youtube" || ehValidoNaNuvem(i.src)));
+        }
+      });
+    }
+    return copia;
+  }
+
   async function salvarConfigNaNuvem(configObj) {
+    const configSegura = sanitizarEstadoParaNuvem(configObj);
     const endpoints = ["/api/config"];
     if (!window.location.hostname.includes("natal-quilombo.vercel.app") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
       endpoints.push(API_NUVEM_PADRAO + "/api/config");
@@ -273,7 +383,7 @@
             "content-type": "application/json",
             "x-editor-senha": SENHA_EDITOR
           },
-          body: JSON.stringify({ config: configObj })
+          body: JSON.stringify({ config: configSegura })
         });
         if (res.ok) return true;
       } catch (_) {}
@@ -281,58 +391,153 @@
     return false;
   }
 
+  async function uploadMultipartVercelBlob(caminhoDestino, blob, clientToken, storeId, inicioMs) {
+    const contentType = blob.type || "application/octet-stream";
+    const mkReqId = () => storeId + ":" + Date.now() + ":" + Math.random().toString(16).slice(2);
+    const createRes = await fetch(
+      "https://vercel.com/api/blob/mpu?pathname=" + encodeURIComponent(caminhoDestino),
+      {
+        method: "POST",
+        headers: {
+          "authorization": "Bearer " + clientToken,
+          "x-api-version": "11",
+          "x-api-blob-request-id": mkReqId(),
+          "x-api-blob-request-attempt": "0",
+          "x-content-type": contentType,
+          "x-mpu-action": "create"
+        }
+      }
+    );
+    if (!createRes.ok) throw new Error("Falha ao iniciar upload multipart");
+    const { uploadId, key } = await createRes.json();
+
+    const tamanhoParte = 8 * 1024 * 1024; // 8 MB por parte
+    const totalPartes = Math.ceil(blob.size / tamanhoParte);
+    const partesConcluidas = [];
+
+    for (let i = 0; i < totalPartes; i++) {
+      const offsetInicio = i * tamanhoParte;
+      const offsetFim = Math.min(offsetInicio + tamanhoParte, blob.size);
+      const fatia = blob.slice(offsetInicio, offsetFim, contentType);
+      const partNumber = i + 1;
+
+      let resultadoParte = null;
+      for (let tentativa = 0; tentativa < 3; tentativa++) {
+        try {
+          resultadoParte = await xhrEnviarComProgresso(
+            "https://vercel.com/api/blob/mpu?pathname=" + encodeURIComponent(caminhoDestino),
+            "POST",
+            {
+              "authorization": "Bearer " + clientToken,
+              "x-api-version": "11",
+              "x-api-blob-request-id": mkReqId(),
+              "x-api-blob-request-attempt": String(tentativa),
+              "x-content-type": contentType,
+              "x-content-length": String(fatia.size),
+              "x-mpu-action": "upload",
+              "x-mpu-key": encodeURIComponent(key),
+              "x-mpu-upload-id": uploadId,
+              "x-mpu-part-number": String(partNumber)
+            },
+            fatia,
+            function (carregadoFatia) {
+              mostrarProgressoUpload(caminhoDestino, offsetInicio + carregadoFatia, blob.size, inicioMs);
+            }
+          );
+          break;
+        } catch (err) {
+          if (tentativa === 2) throw err;
+        }
+      }
+      partesConcluidas.push({ partNumber, etag: resultadoParte.etag });
+    }
+
+    mostrarProgressoUpload(caminhoDestino, blob.size, blob.size, inicioMs);
+    const completeRes = await fetch(
+      "https://vercel.com/api/blob/mpu?pathname=" + encodeURIComponent(caminhoDestino),
+      {
+        method: "POST",
+        headers: {
+          "authorization": "Bearer " + clientToken,
+          "x-api-version": "11",
+          "x-api-blob-request-id": mkReqId(),
+          "x-api-blob-request-attempt": "0",
+          "content-type": "application/json",
+          "x-content-type": contentType,
+          "x-mpu-action": "complete",
+          "x-mpu-key": encodeURIComponent(key),
+          "x-mpu-upload-id": uploadId
+        },
+        body: JSON.stringify(partesConcluidas)
+      }
+    );
+    if (!completeRes.ok) throw new Error("Falha ao finalizar upload multipart");
+    const finalInfo = await completeRes.json();
+    return finalInfo && finalInfo.url ? finalInfo.url : null;
+  }
+
   async function enviarArquivoParaServidorOuNuvem(caminhoDestino, blob) {
-    // 1. Tenta obter token de upload direto para Vercel Blob (/api/upload POST)
+    const inicioMs = Date.now();
+    mostrarProgressoUpload(caminhoDestino, 0, blob.size || 1, inicioMs);
     try {
       const tokenData = await solicitarTokenUpload(caminhoDestino);
       if (tokenData) {
         if (tokenData.clientToken) {
           const partesToken = tokenData.clientToken.split("_");
           const storeId = partesToken[3] || "";
+          // Arquivos maiores que 12 MB usam upload multipart em blocos de 8 MB com retry
+          if (blob.size > 12 * 1024 * 1024) {
+            const urlMpu = await uploadMultipartVercelBlob(
+              caminhoDestino,
+              blob,
+              tokenData.clientToken,
+              storeId,
+              inicioMs
+            );
+            if (urlMpu) return urlMpu;
+          }
+
           const reqId = storeId + ":" + Date.now() + ":" + Math.random().toString(16).slice(2);
-          const putRes = await fetch(
+          const blobInfo = await xhrEnviarComProgresso(
             "https://vercel.com/api/blob/?pathname=" + encodeURIComponent(caminhoDestino),
+            "PUT",
             {
-              method: "PUT",
-              headers: {
-                "authorization": "Bearer " + tokenData.clientToken,
-                "x-api-version": "13",
-                "x-api-blob-request-id": reqId,
-                "x-api-blob-request-attempt": "0",
-                "x-vercel-blob-store-id": storeId,
-                "x-vercel-blob-access": "public",
-                "x-content-type": blob.type || "application/octet-stream",
-                "x-content-length": String(blob.size)
-              },
-              body: blob
+              "authorization": "Bearer " + tokenData.clientToken,
+              "x-api-version": "11",
+              "x-api-blob-request-id": reqId,
+              "x-api-blob-request-attempt": "0",
+              "x-content-type": blob.type || "application/octet-stream",
+              "x-content-length": String(blob.size)
+            },
+            blob,
+            function (carregado) {
+              mostrarProgressoUpload(caminhoDestino, carregado, blob.size, inicioMs);
             }
           );
-          if (putRes.ok) {
-            const blobInfo = await putRes.json();
-            if (blobInfo && blobInfo.url) {
-              return blobInfo.url;
-            }
+          if (blobInfo && blobInfo.url) {
+            return blobInfo.url;
           }
         } else if (tokenData.localUpload) {
-          // Servidor local (localhost): envia via PUT /api/upload?pathname=...
-          const localPut = await fetch(
+          const localInfo = await xhrEnviarComProgresso(
             "/api/upload?pathname=" + encodeURIComponent(caminhoDestino),
+            "PUT",
             {
-              method: "PUT",
-              headers: {
-                "content-type": blob.type || "application/octet-stream",
-                "x-editor-senha": SENHA_EDITOR
-              },
-              body: blob
+              "content-type": blob.type || "application/octet-stream",
+              "x-editor-senha": SENHA_EDITOR
+            },
+            blob,
+            function (carregado) {
+              mostrarProgressoUpload(caminhoDestino, carregado, blob.size, inicioMs);
             }
           );
-          if (localPut.ok) {
-            const localInfo = await localPut.json();
-            if (localInfo && localInfo.url) return localInfo.url;
-          }
+          if (localInfo && localInfo.url) return localInfo.url;
         }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn("Erro no upload:", err);
+    } finally {
+      ocultarProgressoUpload();
+    }
     return null;
   }
 
@@ -672,14 +877,13 @@
       const arquivos = Array.from(ev.target.files || []);
       ev.target.value = "";
       if (!arquivos.length) return;
-      avisar("Carregando foto...");
       for (const file of arquivos) {
         const destino = await registrarArquivoLocal(file, "imagens");
         obterLista().unshift({ tipo: "foto", src: destino, legenda: "" });
       }
       rerender();
       try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
-      avisar("Foto adicionada no topo! Clique em 'Salvar' para publicar.");
+      await salvarGeral();
     });
 
     document.getElementById(btnVideo).addEventListener("click", function () {
@@ -689,7 +893,6 @@
       const arquivos = Array.from(ev.target.files || []);
       ev.target.value = "";
       if (!arquivos.length) return;
-      avisar("Carregando vídeo...");
       for (const file of arquivos) {
         const destino = await registrarArquivoLocal(file, "videos");
         const novoItem = { tipo: "video", src: destino, legenda: "" };
@@ -701,10 +904,10 @@
       }
       rerender();
       try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
-      avisar("Vídeo adicionado no topo! Clique em 'Salvar' para publicar.");
+      await salvarGeral();
     });
 
-    document.getElementById(btnYt).addEventListener("click", function () {
+    document.getElementById(btnYt).addEventListener("click", async function () {
       const link = window.prompt("Cole o link do vídeo no YouTube (ou apenas o código de 11 letras):");
       if (!link) return;
       const ytId = extrairIdYouTube(link);
@@ -719,7 +922,7 @@
       }
       rerender();
       try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
-      avisar("Vídeo do YouTube adicionado!");
+      await salvarGeral();
     });
   }
 
@@ -749,13 +952,12 @@
     const file = ev.target.files && ev.target.files[0];
     ev.target.value = "";
     if (!file) return;
-    avisar("Carregando nova capa...");
     const destino = await registrarArquivoLocal(file, "imagens");
     estado.capa = destino;
     document.getElementById("cfg-capa").value = destino;
     document.getElementById("preview-capa").src = srcParaPreview(destino);
     try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
-    avisar("Nova capa selecionada! Clique em 'Salvar' para publicar.");
+    await salvarGeral();
   });
 
   /* -------------------------------------------------------------------
@@ -871,7 +1073,6 @@
 
       // 2. Envia fotos e vídeos novos para o servidor/nuvem (Vercel Blob ou servidor local)
       if (arquivosPendentes.size > 0) {
-        avisar("Enviando fotos/vídeos...", 15000);
         for (const [destino, blob] of Array.from(arquivosPendentes.entries())) {
           const urlRemota = await enviarArquivoParaServidorOuNuvem(destino, blob);
           if (urlRemota) {

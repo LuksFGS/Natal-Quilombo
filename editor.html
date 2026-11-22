@@ -404,6 +404,74 @@
 
     .toast--visivel { transform: translate(-50%, 0); opacity: 1; }
 
+    .upload-progresso {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      width: min(460px, 92vw);
+      background: var(--verde-escuro);
+      color: var(--branco);
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .32);
+      z-index: 250;
+      display: grid;
+      gap: 8px;
+      border: 1.5px solid rgba(255, 255, 255, .18);
+    }
+
+    .upload-progresso[hidden] {
+      display: none;
+    }
+
+    .upload-progresso__topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: .92rem;
+    }
+
+    .upload-progresso__nome {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .upload-progresso__pct {
+      color: var(--dourado);
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .upload-progresso__trilha {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, .18);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .upload-progresso__barra {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--dourado), #f4c96b);
+      border-radius: 999px;
+      transition: width .15s linear;
+    }
+
+    .upload-progresso__detalhes {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: .8rem;
+      color: rgba(255, 255, 255, .86);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .passos {
       padding-left: 20px;
       display: grid;
@@ -812,6 +880,20 @@
       </div>
     </section>
   </main>
+  </div>
+
+  <div class="upload-progresso" id="upload-progresso" hidden role="status" aria-live="polite">
+    <div class="upload-progresso__topo">
+      <span class="upload-progresso__nome" id="upload-nome">☁️ Enviando arquivo...</span>
+      <span class="upload-progresso__pct" id="upload-pct">0%</span>
+    </div>
+    <div class="upload-progresso__trilha">
+      <div class="upload-progresso__barra" id="upload-barra"></div>
+    </div>
+    <div class="upload-progresso__detalhes">
+      <span id="upload-mb">0,0 MB de 0,0 MB</span>
+      <span id="upload-tempo">Calculando tempo...</span>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
