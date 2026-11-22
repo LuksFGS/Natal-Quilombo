@@ -52,7 +52,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    if (req.headers["x-editor-senha"] !== "0000") {
+    if (req.headers["x-editor-senha"] !== "7002") {
       res.status(401).json({ ok: false, error: "Senha inválida" });
       return;
     }

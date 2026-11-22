@@ -5,8 +5,8 @@
    ===================================================================== */
 
 (function () {
-  const SENHA_EDITOR = "0000";
-  const CHAVE_SESSAO_EDITOR = "natalQuilomboEditorAutenticado";
+  const SENHA_EDITOR = "7002";
+  const CHAVE_SESSAO_EDITOR = "natalQuilomboEditorAutenticado_7002";
   const CHAVE_RASCUNHO = "natalQuilomboRascunho";
   const NOME_BANCO = "natalQuilomboMidiaDB_v2";
   const STORE_MIDIA = "arquivos";
