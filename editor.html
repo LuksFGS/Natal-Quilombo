@@ -409,20 +409,23 @@
       left: 50%;
       bottom: 24px;
       transform: translateX(-50%);
-      width: min(460px, 92vw);
+      width: min(440px, calc(100vw - 32px));
+      box-sizing: border-box;
+      overflow: hidden;
       background: var(--verde-escuro);
       color: var(--branco);
       border-radius: 16px;
-      padding: 16px 20px;
+      padding: 14px 18px;
       box-shadow: 0 16px 40px rgba(0, 0, 0, .32);
       z-index: 250;
-      display: grid;
+      display: flex;
+      flex-direction: column;
       gap: 8px;
       border: 1.5px solid rgba(255, 255, 255, .18);
     }
 
     .upload-progresso[hidden] {
-      display: none;
+      display: none !important;
     }
 
     .upload-progresso__topo {
@@ -430,25 +433,52 @@
       justify-content: space-between;
       align-items: center;
       gap: 10px;
+      width: 100%;
+      min-width: 0;
       font-weight: 800;
-      font-size: .92rem;
+      font-size: .88rem;
     }
 
     .upload-progresso__nome {
+      flex: 1;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
+    .upload-progresso__direita {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
     .upload-progresso__pct {
       color: var(--dourado);
-      font-size: 1rem;
-      flex-shrink: 0;
+      font-size: .95rem;
+      font-weight: 800;
+    }
+
+    .upload-progresso__cancelar {
+      background: rgba(255, 255, 255, .14);
+      color: var(--branco);
+      border: 1px solid rgba(255, 255, 255, .28);
+      border-radius: 999px;
+      padding: 2px 9px;
+      font: inherit;
+      font-size: .74rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .upload-progresso__cancelar:hover {
+      background: rgba(255, 255, 255, .25);
     }
 
     .upload-progresso__trilha {
       width: 100%;
-      height: 10px;
+      height: 8px;
       background: rgba(255, 255, 255, .18);
       border-radius: 999px;
       overflow: hidden;
@@ -466,10 +496,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: .8rem;
-      color: rgba(255, 255, 255, .86);
+      width: 100%;
+      min-width: 0;
+      font-size: .78rem;
+      color: rgba(255, 255, 255, .88);
       gap: 8px;
-      flex-wrap: wrap;
     }
 
     .passos {
@@ -885,7 +916,10 @@
   <div class="upload-progresso" id="upload-progresso" hidden role="status" aria-live="polite">
     <div class="upload-progresso__topo">
       <span class="upload-progresso__nome" id="upload-nome">☁️ Enviando arquivo...</span>
-      <span class="upload-progresso__pct" id="upload-pct">0%</span>
+      <div class="upload-progresso__direita">
+        <span class="upload-progresso__pct" id="upload-pct">0%</span>
+        <button class="upload-progresso__cancelar" id="upload-cancelar" type="button">✕ Cancelar</button>
+      </div>
     </div>
     <div class="upload-progresso__trilha">
       <div class="upload-progresso__barra" id="upload-barra"></div>

@@ -8,8 +8,14 @@
 document.documentElement.classList.add("js");
 
 const CHAVE_RASCUNHO = "natalQuilomboRascunho";
-const NOME_BANCO = "natalQuilomboMidiaDB";
+const NOME_BANCO = "natalQuilomboMidiaDB_v2";
 const STORE_MIDIA = "arquivos";
+
+try {
+  if (window.indexedDB) {
+    window.indexedDB.deleteDatabase("natalQuilomboMidiaDB");
+  }
+} catch (_) {}
 const parametrosUrl = new URLSearchParams(window.location.search);
 
 let cfg = CONFIG;

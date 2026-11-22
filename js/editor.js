@@ -8,8 +8,14 @@
   const SENHA_EDITOR = "0000";
   const CHAVE_SESSAO_EDITOR = "natalQuilomboEditorAutenticado";
   const CHAVE_RASCUNHO = "natalQuilomboRascunho";
-  const NOME_BANCO = "natalQuilomboMidiaDB";
+  const NOME_BANCO = "natalQuilomboMidiaDB_v2";
   const STORE_MIDIA = "arquivos";
+
+  try {
+    if (window.indexedDB) {
+      window.indexedDB.deleteDatabase("natalQuilomboMidiaDB");
+    }
+  } catch (_) {}
 
   let pastaRaiz = null;
   let abaGaleriaAtual = "entrega";
@@ -241,6 +247,46 @@
   const uploadBarraEl = document.getElementById("upload-barra");
   const uploadMbEl = document.getElementById("upload-mb");
   const uploadTempoEl = document.getElementById("upload-tempo");
+  const uploadCancelarBtn = document.getElementById("upload-cancelar");
+
+  let xhrUploadAtivo = null;
+  let destinoUploadAtivo = null;
+  let uploadCanceladoPeloUsuario = false;
+
+  if (uploadCancelarBtn) {
+    uploadCancelarBtn.addEventListener("click", async function () {
+      uploadCanceladoPeloUsuario = true;
+      const alvo = destinoUploadAtivo;
+      if (xhrUploadAtivo) {
+        try { xhrUploadAtivo.abort(); } catch (_) {}
+        xhrUploadAtivo = null;
+      }
+      ocultarProgressoUpload();
+      if (alvo) {
+        arquivosPendentes.delete(alvo);
+        if (previewsLocais.has(alvo)) {
+          URL.revokeObjectURL(previewsLocais.get(alvo));
+          previewsLocais.delete(alvo);
+        }
+        await removerMidiaDoBanco(alvo);
+        if (estado.capa === alvo) estado.capa = CONFIG.capa;
+        if (Array.isArray(estado.carrossel)) {
+          estado.carrossel = estado.carrossel.filter(i => i && i.src !== alvo);
+        }
+        if (estado.galeria) {
+          ["entrega", "montagem", "videos"].forEach(aba => {
+            if (Array.isArray(estado.galeria[aba])) {
+              estado.galeria[aba] = estado.galeria[aba].filter(i => i && i.src !== alvo);
+            }
+          });
+        }
+        try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado)); } catch (_) {}
+        renderCarrossel();
+        renderGaleria();
+      }
+      avisar("Envio cancelado.");
+    });
+  }
 
   function formatarMB(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1).replace(".", ",") + " MB";
@@ -270,7 +316,7 @@
     if (uploadTempoEl) {
       if (pct >= 100) {
         uploadTempoEl.textContent = "Finalizando publicação...";
-      } else if (enviados < 64 * 1024 || decorridoSeg < 0.6) {
+      } else if (enviados < 32 * 1024 || decorridoSeg < 0.5) {
         uploadTempoEl.textContent = "Calculando tempo...";
       } else {
         const velMb = (bytesPorSeg / (1024 * 1024)).toFixed(1).replace(".", ",");
@@ -287,6 +333,7 @@
   function xhrEnviarComProgresso(url, metodo, headers, corpoBlob, aoProgresso) {
     return new Promise(function (resolve, reject) {
       const xhr = new XMLHttpRequest();
+      xhrUploadAtivo = xhr;
       xhr.open(metodo, url, true);
       Object.keys(headers || {}).forEach(function (k) {
         if (headers[k] !== undefined && headers[k] !== null) {
@@ -301,6 +348,7 @@
         };
       }
       xhr.onload = function () {
+        xhrUploadAtivo = null;
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             resolve(JSON.parse(xhr.responseText || "{}"));
@@ -311,8 +359,9 @@
           reject(new Error("HTTP " + xhr.status));
         }
       };
-      xhr.onerror = function () { reject(new Error("Falha de rede no upload")); };
-      xhr.ontimeout = function () { reject(new Error("Tempo esgotado no upload")); };
+      xhr.onerror = function () { xhrUploadAtivo = null; reject(new Error("Falha de rede no upload")); };
+      xhr.ontimeout = function () { xhrUploadAtivo = null; reject(new Error("Tempo esgotado no upload")); };
+      xhr.onabort = function () { xhrUploadAtivo = null; reject(new Error("Upload cancelado")); };
       xhr.send(corpoBlob);
     });
   }
@@ -391,112 +440,17 @@
     return false;
   }
 
-  async function uploadMultipartVercelBlob(caminhoDestino, blob, clientToken, storeId, inicioMs) {
-    const contentType = blob.type || "application/octet-stream";
-    const mkReqId = () => storeId + ":" + Date.now() + ":" + Math.random().toString(16).slice(2);
-    const createRes = await fetch(
-      "https://vercel.com/api/blob/mpu?pathname=" + encodeURIComponent(caminhoDestino),
-      {
-        method: "POST",
-        headers: {
-          "authorization": "Bearer " + clientToken,
-          "x-api-version": "11",
-          "x-api-blob-request-id": mkReqId(),
-          "x-api-blob-request-attempt": "0",
-          "x-content-type": contentType,
-          "x-mpu-action": "create"
-        }
-      }
-    );
-    if (!createRes.ok) throw new Error("Falha ao iniciar upload multipart");
-    const { uploadId, key } = await createRes.json();
-
-    const tamanhoParte = 8 * 1024 * 1024; // 8 MB por parte
-    const totalPartes = Math.ceil(blob.size / tamanhoParte);
-    const partesConcluidas = [];
-
-    for (let i = 0; i < totalPartes; i++) {
-      const offsetInicio = i * tamanhoParte;
-      const offsetFim = Math.min(offsetInicio + tamanhoParte, blob.size);
-      const fatia = blob.slice(offsetInicio, offsetFim, contentType);
-      const partNumber = i + 1;
-
-      let resultadoParte = null;
-      for (let tentativa = 0; tentativa < 3; tentativa++) {
-        try {
-          resultadoParte = await xhrEnviarComProgresso(
-            "https://vercel.com/api/blob/mpu?pathname=" + encodeURIComponent(caminhoDestino),
-            "POST",
-            {
-              "authorization": "Bearer " + clientToken,
-              "x-api-version": "11",
-              "x-api-blob-request-id": mkReqId(),
-              "x-api-blob-request-attempt": String(tentativa),
-              "x-content-type": contentType,
-              "x-content-length": String(fatia.size),
-              "x-mpu-action": "upload",
-              "x-mpu-key": encodeURIComponent(key),
-              "x-mpu-upload-id": uploadId,
-              "x-mpu-part-number": String(partNumber)
-            },
-            fatia,
-            function (carregadoFatia) {
-              mostrarProgressoUpload(caminhoDestino, offsetInicio + carregadoFatia, blob.size, inicioMs);
-            }
-          );
-          break;
-        } catch (err) {
-          if (tentativa === 2) throw err;
-        }
-      }
-      partesConcluidas.push({ partNumber, etag: resultadoParte.etag });
-    }
-
-    mostrarProgressoUpload(caminhoDestino, blob.size, blob.size, inicioMs);
-    const completeRes = await fetch(
-      "https://vercel.com/api/blob/mpu?pathname=" + encodeURIComponent(caminhoDestino),
-      {
-        method: "POST",
-        headers: {
-          "authorization": "Bearer " + clientToken,
-          "x-api-version": "11",
-          "x-api-blob-request-id": mkReqId(),
-          "x-api-blob-request-attempt": "0",
-          "content-type": "application/json",
-          "x-content-type": contentType,
-          "x-mpu-action": "complete",
-          "x-mpu-key": encodeURIComponent(key),
-          "x-mpu-upload-id": uploadId
-        },
-        body: JSON.stringify(partesConcluidas)
-      }
-    );
-    if (!completeRes.ok) throw new Error("Falha ao finalizar upload multipart");
-    const finalInfo = await completeRes.json();
-    return finalInfo && finalInfo.url ? finalInfo.url : null;
-  }
-
   async function enviarArquivoParaServidorOuNuvem(caminhoDestino, blob) {
     const inicioMs = Date.now();
+    destinoUploadAtivo = caminhoDestino;
+    uploadCanceladoPeloUsuario = false;
     mostrarProgressoUpload(caminhoDestino, 0, blob.size || 1, inicioMs);
     try {
       const tokenData = await solicitarTokenUpload(caminhoDestino);
-      if (tokenData) {
+      if (tokenData && !uploadCanceladoPeloUsuario) {
         if (tokenData.clientToken) {
           const partesToken = tokenData.clientToken.split("_");
           const storeId = partesToken[3] || "";
-          // Arquivos maiores que 12 MB usam upload multipart em blocos de 8 MB com retry
-          if (blob.size > 12 * 1024 * 1024) {
-            const urlMpu = await uploadMultipartVercelBlob(
-              caminhoDestino,
-              blob,
-              tokenData.clientToken,
-              storeId,
-              inicioMs
-            );
-            if (urlMpu) return urlMpu;
-          }
-
           const reqId = storeId + ":" + Date.now() + ":" + Math.random().toString(16).slice(2);
           const blobInfo = await xhrEnviarComProgresso(
             "https://vercel.com/api/blob/?pathname=" + encodeURIComponent(caminhoDestino),
@@ -534,8 +488,11 @@
         }
       }
     } catch (err) {
-      console.warn("Erro no upload:", err);
+      if (!uploadCanceladoPeloUsuario) {
+        console.warn("Erro no upload:", err);
+      }
     } finally {
+      destinoUploadAtivo = null;
       ocultarProgressoUpload();
     }
     return null;
@@ -1058,23 +1015,45 @@
     }
   }
 
-  async function salvarGeral() {
-    const botoesSalvar = [
-      document.getElementById("btn-salvar-topo"),
-      document.getElementById("btn-salvar-publicar")
-    ];
-    botoesSalvar.forEach(b => { if (b) b.disabled = true; });
-
-    try {
-      // 1. Garante persistência no IndexedDB local
-      for (const [destino, blob] of arquivosPendentes.entries()) {
-        await salvarMidiaNoBanco(destino, blob);
+  async function limparArquivosPendentesNaoUsados() {
+    const usados = new Set();
+    if (estado.capa) usados.add(estado.capa);
+    if (estado.pix && estado.pix.imagemQrCode) usados.add(estado.pix.imagemQrCode);
+    (estado.carrossel || []).forEach(i => { if (i && i.src) usados.add(i.src); });
+    if (estado.galeria) {
+      ["entrega", "montagem", "videos"].forEach(aba => {
+        (estado.galeria[aba] || []).forEach(i => { if (i && i.src) usados.add(i.src); });
+      });
+    }
+    for (const destino of Array.from(arquivosPendentes.keys())) {
+      if (!usados.has(destino)) {
+        arquivosPendentes.delete(destino);
+        if (previewsLocais.has(destino)) {
+          URL.revokeObjectURL(previewsLocais.get(destino));
+          previewsLocais.delete(destino);
+        }
+        await removerMidiaDoBanco(destino);
       }
+    }
+  }
 
-      // 2. Envia fotos e vídeos novos para o servidor/nuvem (Vercel Blob ou servidor local)
+  async function salvarGeral() {
+    try {
+      // 0. Remove da fila qualquer arquivo antigo que não esteja mais no estado atual
+      await limparArquivosPendentesNaoUsados();
+
+      // 1. Salva textos e links imediatamente na nuvem e no cache local
+      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
+      await salvarConfigNaNuvem(estado);
+
+      // 2. Se houver foto ou vídeo novo adicionado agora, envia para a nuvem
       if (arquivosPendentes.size > 0) {
         for (const [destino, blob] of Array.from(arquivosPendentes.entries())) {
+          await salvarMidiaNoBanco(destino, blob);
           const urlRemota = await enviarArquivoParaServidorOuNuvem(destino, blob);
+          if (uploadCanceladoPeloUsuario) {
+            return;
+          }
           if (urlRemota) {
             substituirCaminhoNoEstado(destino, urlRemota);
             if (urlRemota !== destino) {
@@ -1085,23 +1064,18 @@
         }
         renderCarrossel();
         renderGaleria();
+        localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
+        await salvarConfigNaNuvem(estado);
       }
 
-      // 3. Salva configuração global no servidor/nuvem (/api/config) para todos os aparelhos
-      await salvarConfigNaNuvem(estado);
-
-      // 4. Se pasta local estiver conectada, grava também na pasta
+      // 3. Se pasta local estiver conectada, grava também na pasta
       if (pastaRaiz) {
         await salvarNaPastaConectada();
       }
 
-      // 5. Atualiza cache local
-      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
       avisar("Alterações Salvas!");
     } catch (_) {
       avisar("Não foi possível salvar.");
-    } finally {
-      botoesSalvar.forEach(b => { if (b) b.disabled = false; });
     }
   }
 
@@ -1231,6 +1205,7 @@
       editorInicializado = true;
       await Promise.all([carregarMidiasDoBanco(), sincronizarEstadoRemoto()]);
       limparMidiasOrfasEditor();
+      await limparArquivosPendentesNaoUsados();
       inicializarCampos();
       renderValores();
       renderCarrossel();
