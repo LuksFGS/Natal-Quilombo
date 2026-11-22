@@ -295,6 +295,10 @@ function iniciarSite(midiasLocais) {
     }
   });
 
+  const linkObsDoar = document.getElementById("link-obs-doar");
+  const linkInsta = sanitizarUrlExterna(cfg.redes && cfg.redes.instagram);
+  if (linkObsDoar && linkInsta) linkObsDoar.href = linkInsta;
+
   const linkVakinha = sanitizarUrlExterna(cfg.vakinha);
   if (linkVakinha) {
     document.getElementById("botao-vakinha").href = linkVakinha;
@@ -583,7 +587,10 @@ function iniciarSite(midiasLocais) {
      7. CONTADORES ANIMADOS
      ------------------------------------------------------------------- */
   function animarContador(elemento) {
-    const valorFinal = Number(cfg.numeros[elemento.dataset.contador]) || 0;
+    const chave = elemento.dataset.contador;
+    const valorFinal = chave === "anos"
+      ? Math.max(1, new Date().getFullYear() - (Number(cfg.anoDeInicio) || 2007))
+      : (Number(cfg.numeros[chave]) || 0);
     const duracao = 1600;
     const inicio = performance.now();
 

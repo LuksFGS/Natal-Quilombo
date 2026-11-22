@@ -410,8 +410,8 @@ button {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(90deg, rgba(18, 56, 38, .92) 0%, rgba(18, 56, 38, .7) 45%, rgba(18, 56, 38, .15) 100%),
-    linear-gradient(0deg, rgba(18, 56, 38, .6) 0%, transparent 40%);
+    linear-gradient(90deg, rgba(10, 34, 22, .96) 0%, rgba(10, 34, 22, .82) 45%, rgba(10, 34, 22, .3) 100%),
+    linear-gradient(0deg, rgba(10, 34, 22, .7) 0%, transparent 40%);
 }
 
 .inicio__conteudo {
@@ -552,7 +552,9 @@ button {
 }
 
 .lista-valores strong {
-  min-width: 64px;
+  min-width: 78px;
+  flex-shrink: 0;
+  white-space: nowrap;
   font-family: var(--fonte-titulo);
   font-size: 1.15rem;
   color: var(--cor-vermelho);
@@ -1517,7 +1519,7 @@ button {
 
   /* No celular a película escurece de baixo para cima */
   .inicio::before {
-    background: linear-gradient(0deg, rgba(18, 56, 38, .95) 0%, rgba(18, 56, 38, .75) 50%, rgba(18, 56, 38, .35) 100%);
+    background: linear-gradient(0deg, rgba(10, 34, 22, .97) 0%, rgba(10, 34, 22, .85) 50%, rgba(10, 34, 22, .5) 100%);
   }
 
   .inicio__botoes .botao {
