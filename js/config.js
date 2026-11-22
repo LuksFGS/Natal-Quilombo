@@ -86,7 +86,23 @@ const CONFIG = {
     obsDoar: "Quer doar brinquedos, doces, roupas ou produtos de higiene?",
     tituloSobre: "Uma tradição feita de gente que se importa",
     sobreParagrafo1: "Tudo começou em 2007, quando um pequeno grupo de amigos decidiu levar brinquedos e alegria para as crianças das comunidades quilombolas do Vale do Ribeira no Natal. A emoção daquele dia foi tão grande que virou compromisso.",
-    sobreParagrafo2: "Todos os anos arrecadamos, organizamos e entregamos brinquedos, doces, roupas e produtos de higiene — sempre com prestação de contas, transparência e respeito à história, à cultura e às famílias da comunidade."
+    sobreParagrafo2: "Todos os anos arrecadamos, organizamos e entregamos brinquedos, doces, roupas e produtos de higiene — sempre com prestação de contas, transparência e respeito à história, à cultura e às famílias da comunidade.",
+    etapas: [
+      {
+        titulo: "Arrecadação",
+        texto: "Recebemos doações em dinheiro (Pix e Vakinha), brinquedos, doces, roupas e produtos de higiene."
+      },
+      {
+        titulo: "Montagem",
+        texto: "Voluntários separam, conferem e montam os kits com todo cuidado para cada faixa etária."
+      },
+      {
+        titulo: "Entrega e Transparência",
+        texto: "Entregamos nas comunidades quilombolas do Vale do Ribeira com prestação de contas e comprovantes."
+      }
+    ],
+    tituloContato: "Vamos conversar?",
+    textoContato: "Quer ser voluntário, doar brinquedos, doces, roupas ou produtos de higiene, ou acompanhar a prestação de contas? Fale com a gente nas nossas redes."
   },
 
   /* ---------------------------------------------------------------

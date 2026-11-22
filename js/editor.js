@@ -145,6 +145,18 @@
     vincularCampoTexto("cfg-titulo-sobre", () => estado.textos.tituloSobre, v => { estado.textos.tituloSobre = v; });
     vincularCampoTexto("cfg-sobre-1", () => estado.textos.sobreParagrafo1, v => { estado.textos.sobreParagrafo1 = v; });
     vincularCampoTexto("cfg-sobre-2", () => estado.textos.sobreParagrafo2, v => { estado.textos.sobreParagrafo2 = v; });
+
+    if (!Array.isArray(estado.textos.etapas) || estado.textos.etapas.length < 3) {
+      estado.textos.etapas = clonar(CONFIG.textos.etapas);
+    }
+    [0, 1, 2].forEach(function (idx) {
+      const n = idx + 1;
+      vincularCampoTexto("cfg-etapa-" + n + "-titulo", () => estado.textos.etapas[idx].titulo, v => { estado.textos.etapas[idx].titulo = v; });
+      vincularCampoTexto("cfg-etapa-" + n + "-texto", () => estado.textos.etapas[idx].texto, v => { estado.textos.etapas[idx].texto = v; });
+    });
+
+    vincularCampoTexto("cfg-titulo-contato", () => estado.textos.tituloContato, v => { estado.textos.tituloContato = v; });
+    vincularCampoTexto("cfg-texto-contato", () => estado.textos.textoContato, v => { estado.textos.textoContato = v; });
   }
 
   /* -------------------------------------------------------------------

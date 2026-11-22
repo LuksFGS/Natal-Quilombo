@@ -149,6 +149,17 @@ definirTexto("texto-obs-doar", t.obsDoar);
 definirTexto("texto-titulo-sobre", t.tituloSobre);
 definirTexto("texto-sobre-1", t.sobreParagrafo1);
 definirTexto("texto-sobre-2", t.sobreParagrafo2);
+definirTexto("texto-titulo-contato", t.tituloContato);
+definirTexto("texto-contato", t.textoContato);
+
+if (Array.isArray(t.etapas)) {
+  [0, 1, 2].forEach(function (idx) {
+    const etapa = t.etapas[idx];
+    if (!etapa) return;
+    definirTexto("etapa-" + (idx + 1) + "-titulo", etapa.titulo);
+    definirTexto("etapa-" + (idx + 1) + "-texto", etapa.texto);
+  });
+}
 
 // Lista de valores de doação
 const listaValores = document.getElementById("lista-valores");
