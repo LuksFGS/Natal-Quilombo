@@ -297,6 +297,17 @@
     }
   }
 
+  function mostrarProgressoNuvemTexto(pct, etapaTexto) {
+    if (!painelUploadEl) return;
+    painelUploadEl.hidden = false;
+    const p = Math.min(100, Math.max(0, Math.round(pct)));
+    if (uploadNomeEl) uploadNomeEl.textContent = "☁️ Enviando para a nuvem...";
+    if (uploadPctEl) uploadPctEl.textContent = p + "%";
+    if (uploadBarraEl) uploadBarraEl.style.width = p + "%";
+    if (uploadMbEl) uploadMbEl.textContent = "Sincronizando textos e links";
+    if (uploadTempoEl) uploadTempoEl.textContent = etapaTexto || (p >= 100 ? "Concluído!" : "Publicando no site...");
+  }
+
   function ocultarProgressoUpload() {
     if (painelUploadEl) painelUploadEl.hidden = true;
   }
@@ -1028,22 +1039,38 @@
         }
         renderCarrossel();
         renderGaleria();
+        localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
+        await salvarConfigNaNuvem(estado);
       } else {
-        // Quando está salvando textos/links (sem subir foto ou vídeo), exibe "Enviando para a nuvem..."
-        avisar("☁️ Enviando para a nuvem...", 10000);
+        // Quando está salvando textos/links (sem subir foto ou vídeo), exibe a barra de progresso "Enviando para a nuvem..."
+        let pctAtual = 12;
+        mostrarProgressoNuvemTexto(pctAtual, "Publicando no site...");
+        const timerBarra = setInterval(function () {
+          if (pctAtual < 88) {
+            pctAtual += 14;
+            mostrarProgressoNuvemTexto(pctAtual, "Publicando no site...");
+          }
+        }, 120);
+        try {
+          localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
+          await salvarConfigNaNuvem(estado);
+          clearInterval(timerBarra);
+          mostrarProgressoNuvemTexto(100, "Concluído!");
+          await new Promise(function (r) { setTimeout(r, 380); });
+        } finally {
+          clearInterval(timerBarra);
+          ocultarProgressoUpload();
+        }
       }
 
-      // 2. Salva configuração global na nuvem (/api/config) e no cache local
-      localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(estado));
-      await salvarConfigNaNuvem(estado);
-
-      // 3. Se pasta local estiver conectada, grava também na pasta
+      // 2. Se pasta local estiver conectada, grava também na pasta
       if (pastaRaiz) {
         await salvarNaPastaConectada();
       }
 
       avisar("Alterações Salvas!");
     } catch (_) {
+      ocultarProgressoUpload();
       avisar("Não foi possível salvar.");
     }
   }
